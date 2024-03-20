@@ -1,5 +1,5 @@
-# cs357Project1
-Project 1 :D
+# Project 1 - <OUR_AWESOME_PROJECT_NAME>
+## Ryan Scherbarth, Maisy Dunlavy, <>
 
 ## Allowed libraries
 - gloss 
