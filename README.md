@@ -1,5 +1,5 @@
 # Project 1 - <OUR_AWESOME_PROJECT_NAME>
-## Ryan Scherbarth, Maisy Dunlavy, <>
+## Ryan Scherbarth, Maisy Dunlavy, Molly Palko <>
 
 ## Allowed libraries
 - gloss 
