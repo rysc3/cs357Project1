@@ -1,5 +1,5 @@
 # Project 1 - Anagrams
-## Ryan Scherbarth, Maisy Dunlavy, Molly Palko <>
+## Ryan Scherbarth, Maisy Dunlavy, Molly Palko
 
 ## Current plan 
 -- Anagrams game, using a generated sequence of characters the user will interact through brick to unscrammble the letters into as many words as possible
