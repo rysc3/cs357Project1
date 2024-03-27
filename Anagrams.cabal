@@ -23,13 +23,13 @@ name:               Anagrams
 version:            0.1.0.0
 
 -- A short (one-line) description of the package.
-synopsis:           Word game
+-- synopsis:
 
 -- A longer description of the package.
 -- description:
 
 -- URL for the project homepage or repository.
-homepage:           https://github.com/rysc3/proj1
+homepage:           https://github.com/rysc3/cs357/blob/main/proj1
 
 -- The license under which the package is released.
 license:            MIT
@@ -45,7 +45,6 @@ maintainer:         rscherbarth@unm.edu
 
 -- A copyright notice.
 -- copyright:
-category:           Game
 build-type:         Simple
 
 -- Extra doc files to be distributed with the package, such as a CHANGELOG or a README.
@@ -55,7 +54,7 @@ extra-doc-files:    CHANGELOG.md
 -- extra-source-files:
 
 common warnings
-    ghc-options: -Wall
+    ghc-options: -Wall -threaded
 
 executable Anagrams
     -- Import common warning flags.
