@@ -1,0 +1,10 @@
+#!/bin/sh
+exedir="/Users/ry/.ghcup/ghc/9.4.8/lib/ghc-9.4.8/bin"
+exeprog="./ghc-9.4.8"
+executablename="/Users/ry/.ghcup/ghc/9.4.8/lib/ghc-9.4.8/bin/./ghc-9.4.8"
+bindir="/Users/ry/.ghcup/ghc/9.4.8/bin"
+libdir="/Users/ry/.ghcup/ghc/9.4.8/lib/ghc-9.4.8/lib"
+docdir="/Users/ry/.ghcup/ghc/9.4.8/share/doc/ghc-9.4.8"
+includedir="/Users/ry/.ghcup/ghc/9.4.8/include"
+
+exec "$executablename" -B"$libdir" ${1+"$@"}

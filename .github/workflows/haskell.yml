@@ -19,6 +19,7 @@ jobs:
     - uses: actions/setup-haskell@v1
       with:
         ghc-version: '8.10.1'
+        ghc-path: '.github/workflows/ghc'
         cabal-version: '3.10.2.1'
 
     - name: Cache
