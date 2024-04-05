@@ -1,5 +1,8 @@
 module Main where
 
+-- imports 
+import Score (getScores)
+
 main :: IO ()
 -- main = putStrLn "Hello, Haskell!"
 main = do 
