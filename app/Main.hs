@@ -1,14 +1,14 @@
 module Main where
 
 -- imports 
-import Score (getScores)
+import Score (getScores, findScore)
 
 main :: IO ()
 -- main = putStrLn "Hello, Haskell!"
 main = do 
   -- Maybe we should define some global things here
   let input = "Dictionaries/01-Dictionary.txt"   -- dictionary
-  let scoring = "01-Socring.txt"                   -- scoring     -- TODO figure out how to take user input for these
+  let scoring = "Dictionaries/01-Scoring.txt"                   -- scoring     -- TODO figure out how to take user input for these
   let wordSize = 7                            -- # of letters we give the player, we can take input and set this to what they want to play with
 
 
@@ -21,6 +21,21 @@ main = do
   -- print the first 10 lines
   mapM_ putStrLn $ take 10 $ lines contents
   -- end dictionary read test
+
+  putStrLn "----------Score Test------------"
+  scores <- getScores scoring
+
+  putStrLn $ show scores
+
+  putStrLn " -- A --"
+  putStrLn $ show $ findScore 'A' scores
+  putStrLn " -- B --"
+  putStrLn $ show $ findScore 'B' scores
+  putStrLn " -- C --"
+  putStrLn $ show $ findScore 'C' scores
+
+
+  putStrLn "----------End Score Test------------"
 
   
   {-

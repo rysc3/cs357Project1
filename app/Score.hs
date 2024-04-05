@@ -1,48 +1,53 @@
--- -- () says we are essentially only making getScores public, the rest of the methods will not be accessible outside of the module
--- module Score (getScores) where 
-
---   -- TODO
---   -- We will figure out how to change these later when we take user input
---   let dictionary = "Dictionaries/01-Dictionary.txt"
---   let scoring    = "Dictionaries/01-Socring.txt"
-
---   dictionaryContent <- readFile dictionary    -- read in dictionary 
---   scoreContent <- readFile scoring            -- read in scoring
-
---   {-
---     Dictionaries/01-Scoring.txt should have the following format:
---     A 1 
---     B 2 
---     C 3 
---     <Letter> <Score>
-    
---     Read all the input in, and store into a list of tuples [(Char, Int)]
---     String should be the filepath of the input
---   -}
---   -- getScores :: String -> IO [(Char, Int)]
---   -- getScores 
-
-
 module Score (
-  getScores  -- Exported function
+  getScores,  -- Public methods main can see
+  findScore
 ) where 
 
 import System.IO
 
-dictionary :: FilePath
-dictionary = "Dictionaries/01-Dictionary.txt"
--- dictionaryContent = readFile dictionary
+type Score = (Char, Int)
 
-scoring :: FilePath
-scoring = "Dictionaries/01-Scoring.txt"
--- scoreContent = readFile scoring
+parseLine :: String -> Score
+parseLine line =
+  case words line of
+    [char, score] -> (head char, read score :: Int)
+    _             -> error "should be char, score"
 
-getScores :: String -> String -> IO [(Char, Int)]
-getScores = undefined
--- getScores dictionary scoring = do
---   scoreContent <- readFile scoring
+readScoresFromFile :: FilePath -> IO [Score]
+readScoresFromFile filePath = do
+  content <- readFile filePath
+  return $ map parseLine (lines content)
 
---   let scores = map (\x -> (head x, read (tail x) :: Int)) $ map words $ lines scoreContent
 
-  -- return scores
 
+
+--------------- Public Methods ----------------
+
+
+{-
+  Method loops through the input and returns a list of tuples, of type (<Char>, <Int>), where the int is the corresponding score 
+  for that letter. 
+
+  Input files should be in the format:
+
+  A 1
+  B 2
+  C 3
+  ...
+-}
+getScores :: FilePath -> IO [Score]
+getScores filePath = readScoresFromFile filePath
+
+{-
+  Breaks down the Score type, we pass in a character and our score type, and it will return the integer score for that character. 
+
+  Break down input into two pieces, current and rest.
+  return 0 for any invalid inputs.
+  if input x matches the current Char, return the int in that tuple
+  otherwise, recurse on the remaining list.
+-}
+findScore :: Char -> [Score] -> Int
+findScore _ [] = 0
+findScore x ((char, score):rest) 
+  | x == char = score
+  | otherwise = findScore x rest
