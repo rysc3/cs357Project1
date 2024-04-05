@@ -1,22 +1,38 @@
 module Main where
 
+-- imports 
+import Score (getScoringData, getLetterScore)
+
 main :: IO ()
--- main = putStrLn "Hello, Haskell!"
 main = do 
   -- Maybe we should define some global things here
-  let input = "Dictionaries/Dictionary.txt"   -- dictionary
+  let dictionaryInputFile = "Dictionaries/01-Dictionary.txt"   -- dictionary
+  let scoreInputFile = "Dictionaries/01-Scoring.txt"                   -- scoring     -- TODO figure out how to take user input for these
   let wordSize = 7                            -- # of letters we give the player, we can take input and set this to what they want to play with
-
-
 
 
   -- Testing reading input from dictionary
   -- start dictionary read test
-  contents <- readFile input
+  contents <- readFile dictionaryInputFile
   putStrLn $ "\n" ++ show (length (lines contents)) ++ " lines \n"
   -- print the first 10 lines
   mapM_ putStrLn $ take 10 $ lines contents
   -- end dictionary read test
+
+  putStrLn "----------Score Test------------"
+  scores <- getScoringData scoreInputFile
+
+  putStrLn $ show scores
+
+  putStrLn " -- A --"
+  putStrLn $ show $ getLetterScore 'A' scores
+  putStrLn " -- B --"
+  putStrLn $ show $ getLetterScore 'B' scores
+  putStrLn " -- C --"
+  putStrLn $ show $ getLetterScore 'C' scores
+
+
+  putStrLn "----------End Score Test------------"
 
   
   {-
@@ -56,3 +72,12 @@ main = do
   -}
   -- scoreWord :: [Char] -> int
   -- scoreWord x = undefined
+
+  {-
+    Fucntion takes scoring and returns tuple (<LETTER>, <SCORE>)
+  -}
+  -- scores :: [Char] -> (Char, Int)
+  -- -- read the scoring input
+  -- contents = readFile scoring
+  -- scores xs = (head xs, read (tail xs) :: 1)
+  -- putStrLn $ show $ scores "A"
