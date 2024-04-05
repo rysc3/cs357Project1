@@ -1,8 +1,7 @@
-# Project 1 - <OUR_AWESOME_PROJECT_NAME>
-## Ryan Scherbarth, Maisy Dunlavy, <>
+# Project 1 - Anograms
+## Ryan Scherbarth, Maisy Dunlavy, Molly Palko
 
-## Allowed libraries
-- gloss 
+## GUI Library
 - brick 
 
 ## Current plan 
