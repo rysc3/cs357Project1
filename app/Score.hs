@@ -1,9 +1,10 @@
 module Score (
-  getScores,  -- Public methods main can see
-  findScore
+  getScoringData,  -- Public methods main can see
+  getLetterScore
 ) where 
 
 import System.IO
+import Data.Char (toUpper)  -- for getScores method
 
 type Score = (Char, Int)
 
@@ -35,8 +36,10 @@ readScoresFromFile filePath = do
   C 3
   ...
 -}
-getScores :: FilePath -> IO [Score]
-getScores filePath = readScoresFromFile filePath
+getScoringData :: FilePath -> IO [Score]
+getScoringData filePath = do 
+  scores <- readScoresFromFile filePath
+  return $ map (\(char, score) -> (toUpper char, score)) scores   -- convert all letters to uppercase
 
 {-
   Breaks down the Score type, we pass in a character and our score type, and it will return the integer score for that character. 
@@ -46,8 +49,8 @@ getScores filePath = readScoresFromFile filePath
   if input x matches the current Char, return the int in that tuple
   otherwise, recurse on the remaining list.
 -}
-findScore :: Char -> [Score] -> Int
-findScore _ [] = 0
-findScore x ((char, score):rest) 
+getLetterScore :: Char -> [Score] -> Int
+getLetterScore _ [] = 0
+getLetterScore x ((char, score):rest) 
   | x == char = score
-  | otherwise = findScore x rest
+  | otherwise = getLetterScore x rest
