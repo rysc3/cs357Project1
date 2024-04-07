@@ -11,7 +11,6 @@ import Data.Text (pack, unpack, splitOn)  -- getListOfStrings
 data Trie = Node Char (M.Map Char Trie) | Empty (M.Map Char Trie) --can be a node or empty 
   deriving (Eq, Show)
 
-<<<<<<< Updated upstream
 empty :: Trie
 empty = Empty M.empty
 
@@ -22,7 +21,6 @@ getChildren (Empty m) = m
 setChildren :: Trie -> M.Map Char Trie -> Trie
 setChildren (Node c _) children = Node c children
 setChildren (Empty _) children = Empty children  
-=======
 
 {-
   Input from the dictionary file is of the type:
@@ -38,7 +36,6 @@ setChildren (Empty _) children = Empty children
 -}
 getListOfStrings :: [Char] -> [[Char]]
 getListOfStrings input = map unpack $ splitOn (pack "\r\n") (pack input)
->>>>>>> Stashed changes
 
 
 insert :: String -> Trie -> Trie
