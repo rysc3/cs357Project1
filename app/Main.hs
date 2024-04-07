@@ -2,6 +2,7 @@ module Main where
 
 -- imports 
 import Score (getScoringData, getLetterScore)
+import Tests (runAllTests)
 
 main :: IO ()
 main = do 

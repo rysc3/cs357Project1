@@ -1,26 +1,15 @@
 module Dictionary(
   search,
-  buildDictionary
+  buildDictionary,
+  getListOfStrings
 ) where
 
-import qualified Data.Map.Strict as M --need a map because we don't know how many children each node is going to have 
+import qualified Data.Map.Strict as M --need a map because we don't know how many children each node is going to have
+import Data.Text (pack, unpack, splitOn) 
 
 
 data Trie = Node (M.Map Char Trie) 
   deriving (Eq, Show)
-
-getListOfStrings :: String -> [String]
-getListOfStrings = undefined
-empty :: Trie
-empty = Empty M.empty
-
-getChildren:: Trie -> M.Map Char Trie
-getChildren (Node _ m) = m
-getChildren (Empty m) = m
-
-setChildren :: Trie -> M.Map Char Trie -> Trie
-setChildren (Node c _) children = Node c children
-setChildren (Empty _) children = Empty children  
 
 {-
   Input from the dictionary file is of the type:
