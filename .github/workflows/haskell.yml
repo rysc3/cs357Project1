@@ -23,11 +23,13 @@ jobs:
     - name: Install Cabal
       run: |
         cabal_version=3.4.0.0
-        curl -O https://downloads.haskell.org/~cabal/cabal-install-$cabal_version/cabal-install-$cabal_version-x86_64-unknown-linux.tar.xz
-        tar -xf cabal-install-$cabal_version-x86_64-unknown-linux.tar.xz
+        curl -LO "https://downloads.haskell.org/~cabal/cabal-install-${cabal_version}/cabal-install-${cabal_version}-x86_64-unknown-linux.tar.xz"
+        tar -xf "cabal-install-${cabal_version}-x86_64-unknown-linux.tar.xz"
+        mkdir -p ~/.cabal/bin
         mv cabal ~/.cabal/bin/
         cabal --version
         cabal update
+
 
     - name: Build project
       run: cabal build
