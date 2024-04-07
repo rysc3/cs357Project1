@@ -14,3 +14,9 @@
 
 -- sets of unscrammbled letters will not be random, we can have a few sets that we alternate that have a lot of words that can be generated
 --do we want a timer? a way to keep score? 
+
+
+-- can brick do all the event handling and graphics that we need for anagrams? or will we need to use both? 
+from the program we have, how to we start implementing a user interface
+
+
