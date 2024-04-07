@@ -2,6 +2,7 @@ module Main where
 
 -- imports 
 import Score (getScoringData, getLetterScore)
+import Dictionary (getListOfStrings)
 
 main :: IO ()
 main = do 
@@ -33,6 +34,8 @@ main = do
 
 
   putStrLn "----------End Score Test------------"
+  putStrLn (head (getListOfStrings $ take 50 contents))   -- testing getListOfStrings works
+
 
   
   {-
