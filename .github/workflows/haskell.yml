@@ -25,7 +25,6 @@ jobs:
         cabal_version=3.4.0.0
         curl -LO "https://downloads.haskell.org/~cabal/Cabal-3.4.0.0/Cabal-3.4.0.0.tar.gz"
         tar -xf "Cabal-3.4.0.0.tar.gz"
-        mv cabal ~/.ghcup/bin/cabal
         cabal --version
         cabal update
 
