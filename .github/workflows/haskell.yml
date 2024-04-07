@@ -32,7 +32,8 @@ jobs:
       run: cabal build
 
     - name: Run tests
-      run: runAllTests dictionaryInputFile scoreInputFile | ghci app/Main.hs app/Score.hs app/Dictionary.hs app/Tests.hs
+      run: |
+      runAllTests dictionaryInputFile scoreInputFile | ghci app/Main.hs app/Score.hs app/Dictionary.hs app/Tests.hs
       env:
         dictionaryInputFile: "Dictionaries/01-Dictionary.txt"
         scoreInputFile: "Dictionaries/01-Scoring.txt"
