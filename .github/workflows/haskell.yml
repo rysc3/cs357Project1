@@ -13,11 +13,21 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Set up Haskell
-      uses: actions/setup-haskell@v1
-      with:
-        ghc-version: 9.4.8
-        cabal-version: 3.4.0.0
+    - name: Install GHC 9.4.8 using ghcup
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+        ghcup install 9.4.8
+        ghcup set 9.4.8
+      shell: bash
+
+    - name: Install Cabal
+      run: |
+        cabal_version=3.4.0.0
+        curl -O https://downloads.haskell.org/~cabal/cabal-install-$cabal_version/cabal-install-$cabal_version-x86_64-unknown-linux.tar.xz
+        tar -xf cabal-install-$cabal_version-x86_64-unknown-linux.tar.xz
+        mv cabal ~/.cabal/bin/
+        cabal --version
+        cabal update
 
     - name: Build project
       run: cabal build
