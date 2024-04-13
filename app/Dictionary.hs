@@ -25,13 +25,15 @@ emptyTrie = Node '0' False M.empty
 
 insert :: String -> Trie -> Trie
 insert []     trie = trie { endOfWord = True }
-insert (x:xs) trie = trie { children = M.insertWith (\_ existing -> insert xs existing) x (insert xs emptyTrie) (children trie) }
+insert (x:xs) trie =
+    let childNode = M.lookup x (children trie)
+        newNode = insert xs (maybe emptyTrie id childNode)
+        updatedChildren = M.insert x newNode (children trie)
+    in trie { children = updatedChildren }
 
 contains :: String -> Trie -> Bool
-contains []     trie = endOfWord trie
-contains (x:xs) trie = case M.lookup x (children trie) of
-    Nothing   -> False
-    Just next -> contains xs next
+contains [] trie = endOfWord trie
+contains (x:xs) trie = maybe False (contains xs) (M.lookup x (children trie)) --need to handle for nothing or Just cases when called 
 
 buildDictionary :: String -> Trie
 buildDictionary s = foldr insert emptyTrie (getListOfStrings s)
