@@ -1,2 +1,5 @@
 dist-newstyle
 dist-newstyle/*
+.DS_Store
+app/Git-pipeline.o
+app/Git-pipeline.hi

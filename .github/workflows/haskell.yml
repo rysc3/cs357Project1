@@ -1,0 +1,39 @@
+name: Haskell CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Install GHC 9.4.8 using ghcup
+      run: |
+        curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | sh
+        ghcup install 9.4.8
+        ghcup set 9.4.8
+      shell: bash
+
+    - name: Install Cabal
+      run: |
+        cabal_version=3.4.0.0
+        curl -LO "https://downloads.haskell.org/~cabal/Cabal-3.4.0.0/Cabal-3.4.0.0.tar.gz"
+        tar -xf "Cabal-3.4.0.0.tar.gz"
+        cabal --version
+        cabal update
+
+    - name: Build project
+      run: cabal build
+
+    - name: Run tests
+      run: |
+        runAllTests dictionaryInputFile scoreInputFile | ghci app/Main.hs app/Score.hs app/Dictionary.hs app/Tests.hs
+      env:
+        dictionaryInputFile: "Dictionaries/01-Dictionary.txt"
+        scoreInputFile: "Dictionaries/01-Scoring.txt"

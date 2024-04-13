@@ -2,6 +2,7 @@ module Main where
 
 -- imports 
 import Score (getScoringData, getLetterScore)
+import Tests (runAllTests)
 
 main :: IO ()
 main = do 
@@ -10,29 +11,8 @@ main = do
   let scoreInputFile = "Dictionaries/01-Scoring.txt"                   -- scoring     -- TODO figure out how to take user input for these
   let wordSize = 7                            -- # of letters we give the player, we can take input and set this to what they want to play with
 
+  runAllTests dictionaryInputFile scoreInputFile
 
-  -- Testing reading input from dictionary
-  -- start dictionary read test
-  contents <- readFile dictionaryInputFile
-  putStrLn $ "\n" ++ show (length (lines contents)) ++ " lines \n"
-  -- print the first 10 lines
-  mapM_ putStrLn $ take 10 $ lines contents
-  -- end dictionary read test
-
-  putStrLn "----------Score Test------------"
-  scores <- getScoringData scoreInputFile
-
-  putStrLn $ show scores
-
-  putStrLn " -- A --"
-  putStrLn $ show $ getLetterScore 'A' scores
-  putStrLn " -- B --"
-  putStrLn $ show $ getLetterScore 'B' scores
-  putStrLn " -- C --"
-  putStrLn $ show $ getLetterScore 'C' scores
-
-
-  putStrLn "----------End Score Test------------"
 
   
   {-
