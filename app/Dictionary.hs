@@ -1,8 +1,8 @@
 module Dictionary(
   buildDictionary,
+  insert,
   getListOfStrings,
-  contains,
-  buildDictionary
+  contains
 ) where
 
 import Data.Map.Strict (Map)
