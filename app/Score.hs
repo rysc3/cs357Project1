@@ -54,3 +54,18 @@ getLetterScore _ [] = 0
 getLetterScore x ((char, score):rest) 
   | x == char = score
   | otherwise = getLetterScore x rest
+
+{-
+  Calculates the score of a given word by calculating the score of each letter, and also adding on a letter count multiplier
+
+  There is no multiplier for < 3 letter words. 
+  on the range [3,7] we have a multiplier of 7x where the x is the number of leters in the word
+  So if you have a word 
+  `aaa` = 3 pts 
+  `aaaa` = 3 * 1 + 1*7 = 10 pts   -- 4th letter multiplied
+  `aaaaa` = 3 * 1 + 2*7 = 17 pts  -- 4th and 5th letter multiplied
+  ...
+-}
+getWordScore :: [Char] -> [Score] -> Int
+getWordScore [] _ = 0
+getWordScore (x:xs) scores = getLetterScore x scores + getWordScore xs scores
