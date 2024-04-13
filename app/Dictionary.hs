@@ -47,7 +47,9 @@ contains (x:xs) trie = case M.lookup x (children trie) of
     Just next -> contains xs next
 
 buildDictionary :: String -> [String] -> Trie
-buildDictionary s = foldr insert emptyTrie (strToList s)
+buildDictionary s = go 
+    where 
+        go
 --string will have all words in dictionary, which we will split into a list of strings, then insert each string into the trie
 
 strToList :: String -> [String]
