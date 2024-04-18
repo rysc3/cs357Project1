@@ -6,6 +6,7 @@ module Dictionary(
 import qualified Data.Map.Strict as M --need a map because we don't know how many children each node is going to have
 import Data.Text (pack, unpack, splitOn) 
 
+-- maisy was here
 
 data Trie = Node (M.Map Char Trie) 
   deriving (Eq, Show)
