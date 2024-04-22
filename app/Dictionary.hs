@@ -1,14 +1,18 @@
 module Dictionary(
-  search,
   buildDictionary,
+  contains,
   getListOfStrings
 ) where
 
 import qualified Data.Map.Strict as M --need a map because we don't know how many children each node is going to have
 import Data.Text (pack, unpack, splitOn) 
 
+-- maisy was here
 
-data Trie = Node (M.Map Char Trie) 
+data Trie = Node {
+  endOfWord :: Bool,
+  children :: M.Map Char Trie
+}
   deriving (Eq, Show)
 
 {-
@@ -23,16 +27,24 @@ data Trie = Node (M.Map Char Trie)
   splitOn to split into a list of strings 
   map unpack over list to convert back to strings
 -}
-getListOfStrings :: [Char] -> [[Char]]
-getListOfStrings input = map unpack $ splitOn (pack "\r\n") (pack input)
-
+emptyTrie :: Trie
+emptyTrie = Node False M.empty
 
 insert :: String -> Trie -> Trie
-insert = undefined
+insert []     trie = trie { endOfWord = True }
+insert (x:xs) trie =
+    let childNode = M.lookup x (children trie)
+        newNode = insert xs (maybe emptyTrie id childNode)
+        updatedChildren = M.insert x newNode (children trie)
+    in trie { children = updatedChildren }
 
+contains :: String -> Trie -> Bool
+contains [] trie = endOfWord trie
+contains (x:xs) trie = maybe False (contains xs) (M.lookup x (children trie)) --need to handle for nothing or Just cases when called 
 
-search :: String -> Bool
-search =  undefined 
+buildDictionary :: String -> Trie
+buildDictionary s = foldr insert emptyTrie (getListOfStrings s)
+--string will have all words in dictionary, which we will split into a list of strings, then insert each string into the trie
 
-buildDictionary :: [String] -> Trie
-buildDictionary = undefined
+getListOfStrings :: String -> [String]
+getListOfStrings s = map unpack (splitOn (pack "\r\n") (pack s)) --convert string to text, split on \r\n, convert back to string
