@@ -1,6 +1,7 @@
 module Dictionary(
   buildDictionary,
-  contains
+  contains,
+  getListOfStrings
 ) where
 
 import qualified Data.Map.Strict as M --need a map because we don't know how many children each node is going to have
@@ -8,7 +9,10 @@ import Data.Text (pack, unpack, splitOn)
 
 -- maisy was here
 
-data Trie = Node (M.Map Char Trie) 
+data Trie = Node {
+  endOfWord :: Bool,
+  children :: M.Map Char Trie
+}
   deriving (Eq, Show)
 
 {-
@@ -24,7 +28,7 @@ data Trie = Node (M.Map Char Trie)
   map unpack over list to convert back to strings
 -}
 emptyTrie :: Trie
-emptyTrie = Node '0' False M.empty
+emptyTrie = Node False M.empty
 
 insert :: String -> Trie -> Trie
 insert []     trie = trie { endOfWord = True }
@@ -41,3 +45,6 @@ contains (x:xs) trie = maybe False (contains xs) (M.lookup x (children trie)) --
 buildDictionary :: String -> Trie
 buildDictionary s = foldr insert emptyTrie (getListOfStrings s)
 --string will have all words in dictionary, which we will split into a list of strings, then insert each string into the trie
+
+getListOfStrings :: String -> [String]
+getListOfStrings s = map unpack (splitOn (pack "\r\n") (pack s)) --convert string to text, split on \r\n, convert back to string
