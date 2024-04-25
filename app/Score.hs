@@ -65,7 +65,22 @@ getLetterScore x ((char, score):rest)
   `aaaa` = 3 * 1 + 1*7 = 10 pts   -- 4th letter multiplied
   `aaaaa` = 3 * 1 + 2*7 = 17 pts  -- 4th and 5th letter multiplied
   ...
+
+  getWordScore is the main method. It passes the word first into calc3, which will calculate the score values 
+  of the first 3 letters as they are defined in the scoring file. If there are any letters after the first 3, 
+  it passes these into calcBonus, which does the same as calc3 but multiples the score by 7 for our length 
+  bonus at the end. getWordScore sums these at the end.
 -}
 getWordScore :: [Char] -> [Score] -> Int
-getWordScore [] _ = 0
-getWordScore (x:xs) scores = getLetterScore x scores + getWordScore xs scores
+getWordScore word scores = calc3 word scores + calcBonus word scores
+  where 
+
+    calc3 word scores = sumLetterScores (take 3 word) scores
+      where
+        sumLetterScores [] _ = 0
+        sumLetterScores (x:xs) scores = getLetterScore x scores + sumLetterScores xs scores
+
+    calcBonus word scores = 7 * sumLetterScores (drop 3 word) scores
+      where
+        sumLetterScores [] _ = 0
+        sumLetterScores (x:xs) scores = getLetterScore x scores + sumLetterScores xs scores
