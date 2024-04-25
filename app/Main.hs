@@ -1,40 +1,43 @@
 module Main where
 
 -- imports 
-import Score (getScoringData, getLetterScore)
+import Score (getScoringData, getWordScore)
 import Tests (runAllTests)
-import Dictionary (buildDictionary, contains, getListOfStrings)
+import Dictionary (buildDictionary, contains)
 
 main :: IO ()
 main = do 
   -- Maybe we should define some global things here
   let dictionaryInputFile = "Dictionaries/01-Dictionary.txt"   -- dictionary
-  let scoreInputFile = "Dictionaries/01-Scoring.txt"                   -- scoring     -- TODO figure out how to take user input for these
-  let wordSize = 7                            -- # of letters we give the player, we can take input and set this to what they want to play with
+      scoreInputFile = "Dictionaries/01-Scoring.txt"                   -- scoring     -- TODO figure out how to take user input for these
+      wordSize = 7                            -- # of letters we give the player, we can take input and set this to what they want to play with
 
-  -- runAllTests dictionaryInputFile scoreInputFile
 
-  -- This is how we initialize the game
   contents <- readFile dictionaryInputFile
   let dictionary = buildDictionary contents
 
-  putStrLn "Dictionary:"
-  -- putStrLn (show dictionary)
+
+  scores <- getScoringData scoreInputFile
 
 
-  -- Then we can test to make sure some words exist:
-  let word1 = "hello"
-  let word2 = "world"
-  let word3 = "apple"
-  let word4 = "banana"
-  let word5 = "orange"
+  let word1 = "HELLO"
+      word2 = "world"
+      word3 = "apple"
+      word4 = "banana"
+      word5 = "orange"
 
+  -- Test we can find letters
   putStrLn $ word1 ++ " exists? " ++ if contains word1 dictionary then "Yes" else "No"
   putStrLn $ word2 ++ " exists? " ++ if contains word2 dictionary then "Yes" else "No"
   putStrLn $ word3 ++ " exists? " ++ if contains word3 dictionary then "Yes" else "No"
   putStrLn $ word4 ++ " exists? " ++ if contains word4 dictionary then "Yes" else "No"
   putStrLn $ word5 ++ " exists? " ++ if contains word5 dictionary then "Yes" else "No"
+
+  -- Test we have scores for letters
+  testGetWordScores [word1, word2, word3, word4, word5] scores
   
+
+
   {-
     Function to check if a word exists in the dictionary.
       - Takes a String as input 
@@ -81,3 +84,14 @@ main = do
   -- contents = readFile scoring
   -- scores xs = (head xs, read (tail xs) :: 1)
   -- putStrLn $ show $ scores "A"
+
+  
+  -- Keep here so we run the tests in the github pipeline
+  runAllTests dictionaryInputFile scoreInputFile
+
+-- Takes a list of words and checks their scores to make sure dictionary & scoring is intiialized properly
+testGetWordScores :: [String] -> [(Char, Int)] -> IO ()
+testGetWordScores [] _ = return ()
+testGetWordScores (x:xs) scores = do
+  putStrLn $ "Score for " ++ x ++ " is " ++ show (getWordScore x scores)
+  testGetWordScores xs scores

@@ -36,7 +36,7 @@ readScoresFromFile filePath = do
   C 3
   ...
 -}
-getScoringData :: FilePath -> IO [Score]
+getScoringData :: String -> IO [Score]
 getScoringData filePath = do 
   scores <- readScoresFromFile filePath
   return $ map (\(char, score) -> (toUpper char, score)) scores   -- convert all letters to uppercase
@@ -52,7 +52,7 @@ getScoringData filePath = do
 getLetterScore :: Char -> [Score] -> Int
 getLetterScore _ [] = 0
 getLetterScore x ((char, score):rest) 
-  | x == char = score
+  | toUpper x == char = score
   | otherwise = getLetterScore x rest
 
 {-
