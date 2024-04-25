@@ -1,9 +1,9 @@
 module Score (
   getScoringData,  -- Public methods main can see
-  getLetterScore
+  getLetterScore,
+  getWordScore
 ) where 
 
-import System.IO
 import Data.Char (toUpper)  -- for getScores method
 
 type Score = (Char, Int)
