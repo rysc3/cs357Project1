@@ -56,13 +56,26 @@ shrinkTrie :: [Char] -> Trie -> Trie
 shrinkTrie letters trie = shrinkTrie' letters 0 trie
   where
     shrinkTrie' :: [Char] -> Int -> Trie -> Trie
-    shrinkTrie' _ _ (Node True _) = Node True M.empty -- Keep valid words
-    shrinkTrie' _ 7 _             = Node False M.empty -- Max depth reached, prune
-    shrinkTrie' [] _ _            = Node False M.empty -- Ran out of letters, prune
+    shrinkTrie' _ _ (Node True _) = Node True M.empty 
+    -- Keep valid words
+    shrinkTrie' _ 7 _             = Node False M.empty 
+    -- Max depth reached, prune
+    shrinkTrie' [] _ _            = Node False M.empty 
+    -- Ran out of letters, prune
     shrinkTrie' (x:xs) depth (Node end chMap) =
       case M.lookup x chMap of
         Just child ->
-          let nextDepth = if end then depth + 1 else depth -- Increase depth only if reaching end of word
-          in Node end (M.singleton x (shrinkTrie' xs nextDepth child)) -- Recurse down the trie
+          let nextDepth = if end then depth + 1 else depth 
+          -- Increase depth only if reaching end of word
+          in Node end (M.singleton x (shrinkTrie' xs nextDepth child)) 
+          -- Recurse down the trie
         Nothing ->
           Node False M.empty -- Letter not found, prune
+
+
+countWords :: Trie -> Int
+countWords trie = countWords' trie
+  where
+    countWords' :: Trie -> Int
+    countWords' (Node True childrenMap) = 1 + sum (map countWords' (M.elems childrenMap))
+    countWords' (Node False childrenMap) = sum (map countWords' (M.elems childrenMap))
