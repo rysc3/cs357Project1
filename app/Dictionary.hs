@@ -14,6 +14,7 @@ data Trie = Node
   }
   deriving (Eq)
 
+-- Make tree show pretty
 instance Show Trie where
   show trie = unlines $ map (showPath "") (M.toList (children trie))
     where
@@ -42,5 +43,9 @@ contains (x : xs) trie = maybe False (contains xs) (M.lookup x (children trie))
 buildDictionary :: String -> Trie
 buildDictionary s = foldr insert emptyTrie (getListOfStrings s)
 
+{-
+  Dictionary file is read in in the format "word\r\nword\r\nword\r\n", this function 
+  converts into a list of the actual words.
+-}
 getListOfStrings :: String -> [String]
 getListOfStrings s = map unpack (splitOn (pack "\r\n") (pack s))

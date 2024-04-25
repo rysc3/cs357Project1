@@ -3,6 +3,7 @@ module Main where
 -- imports 
 import Score (getScoringData, getLetterScore)
 import Tests (runAllTests)
+import Dictionary (buildDictionary, contains, getListOfStrings)
 
 main :: IO ()
 main = do 
@@ -11,9 +12,28 @@ main = do
   let scoreInputFile = "Dictionaries/01-Scoring.txt"                   -- scoring     -- TODO figure out how to take user input for these
   let wordSize = 7                            -- # of letters we give the player, we can take input and set this to what they want to play with
 
-  runAllTests dictionaryInputFile scoreInputFile
+  -- runAllTests dictionaryInputFile scoreInputFile
+
+  -- This is how we initialize the game
+  contents <- readFile dictionaryInputFile
+  let dictionary = buildDictionary contents
+
+  putStrLn "Dictionary:"
+  -- putStrLn (show dictionary)
 
 
+  -- Then we can test to make sure some words exist:
+  let word1 = "hello"
+  let word2 = "world"
+  let word3 = "apple"
+  let word4 = "banana"
+  let word5 = "orange"
+
+  putStrLn $ word1 ++ " exists? " ++ if contains word1 dictionary then "Yes" else "No"
+  putStrLn $ word2 ++ " exists? " ++ if contains word2 dictionary then "Yes" else "No"
+  putStrLn $ word3 ++ " exists? " ++ if contains word3 dictionary then "Yes" else "No"
+  putStrLn $ word4 ++ " exists? " ++ if contains word4 dictionary then "Yes" else "No"
+  putStrLn $ word5 ++ " exists? " ++ if contains word5 dictionary then "Yes" else "No"
   
   {-
     Function to check if a word exists in the dictionary.
