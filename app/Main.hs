@@ -24,7 +24,7 @@ main = do
       word2 = "world"
       word3 = "apple"
       word4 = "banana"
-      word5 = "orange"
+      word5 = "abnop"
 
   -- Test we can find letters
   putStrLn $ word1 ++ " exists? " ++ if contains word1 dictionary then "Yes" else "No"

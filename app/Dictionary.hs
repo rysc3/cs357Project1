@@ -6,7 +6,7 @@ module Dictionary
 where
 
 import qualified Data.Map.Strict as M
-import Data.Text (pack, splitOn, unpack)
+import Data.Text (pack, splitOn, unpack, toUpper)
 
 data Trie = Node
   { endOfWord :: Bool,
@@ -28,6 +28,12 @@ instance Show Trie where
 emptyTrie :: Trie
 emptyTrie = Node False M.empty
 
+{-
+  TODO @here 
+  We need to convert every letter to be CAPITALIZED as we add it to the tree. Right now contains is case sensitive and returns false for a word if it has any capitalizations. 
+    
+    In the scoring data I have everything working by converting to be capitalized firsrt, so we should do the same thing here to keep it all uniform.
+-}
 insert :: String -> Trie -> Trie
 insert [] trie = trie {endOfWord = True}
 insert (x : xs) trie =
