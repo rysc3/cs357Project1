@@ -1,4 +1,5 @@
 module Dictionary(
+  Trie,
   buildDictionary,
   contains,
   getListOfStrings

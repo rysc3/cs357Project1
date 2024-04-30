@@ -64,13 +64,13 @@ executable Anagrams
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    other-modules: Score, Dictionary, Tests
+    other-modules: Score, Dictionary, Tests, BrickMain
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.17.2.1, containers, text
+    build-depends:    base ^>=4.17.2.1, containers, text, brick, vty, vty-crossplatform
 
     -- Directories containing source files.
     hs-source-dirs:   app

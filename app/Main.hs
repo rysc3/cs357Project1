@@ -3,6 +3,10 @@ module Main where
 -- imports 
 import Score (getScoringData, getLetterScore)
 import Tests (runAllTests)
+import Dictionary (buildDictionary, contains, getListOfStrings)
+import qualified BrickMain as BM
+
+
 
 main :: IO ()
 main = do 
@@ -12,7 +16,14 @@ main = do
   let wordSize = 7                            -- # of letters we give the player, we can take input and set this to what they want to play with
 
   runAllTests dictionaryInputFile scoreInputFile
+  BM.run
 
+
+
+  --table in brick 
+  --first line is the letters they're played, second line is letts they've played, third line is the arrow for currently selected letter
+
+  --create functin to create the state 
 
   
   {-
