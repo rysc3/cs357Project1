@@ -11,12 +11,23 @@ build-type:         Simple
 extra-doc-files:    CHANGELOG.md
 
 common warnings
-    ghc-options: -Wall -threaded
+  ghc-options: -Wall -threaded
 
 -- Dependencies
 executable Anagrams
     main-is:          Main.hs
-    other-modules:    Score, Dictionary, Tests, BrickMain
-    build-depends:    base ^>=4.17.2.1, containers, text, brick, vty, vty-crossplatform, optparse-applicative
+
+    other-modules:    Score, Dictionary, Tests
+
+    build-depends:    base ^>=4.17.2.1, 
+                      containers, 
+                      text, 
+                      brick, 
+                      vty, 
+                      vty-crossplatform, 
+                      optparse-applicative, 
+                      random
+
     hs-source-dirs:   app
+
     default-language: Haskell2010

@@ -1,74 +1,70 @@
 module Main where
 
--- imports 
-import Score (getScoringData, getLetterScore)
-import Tests (runAllTests)
+-- imports
+
+import Control.Monad (when)
+import qualified Data.Map as Map
 import Dictionary (buildDictionary, contains, getListOfStrings)
-import qualified BrickMain as BM
+import Options.Applicative
+import Score (getLetterScore, getScoringData)
+import System.Exit (exitSuccess)
+import System.Random (mkStdGen, randomRs)
+import Tests (runAllTests)
 
+-- Define your data types here if necessary
 
-
+-- | Main function to start the game
 main :: IO ()
-main = do 
-  -- Maybe we should define some global things here
-  let dictionaryInputFile = "Dictionaries/01-Dictionary.txt"   -- dictionary
-  let scoreInputFile = "Dictionaries/01-Scoring.txt"                   -- scoring     -- TODO figure out how to take user input for these
-  let wordSize = 7                            -- # of letters we give the player, we can take input and set this to what they want to play with
+main = do
+  -- Initialize the game
+  (dictionary, scoring) <- initialize
 
-  -- runAllTests dictionaryInputFile scoreInputFile
-  BM.main
+  -- Prompt the user to pick the number of letters
+  putStrLn "How many letters would you like to play with?"
+  numLetters <- getNumberInput
 
+  -- Generate random letters
+  let randomLetters = take numLetters (randomRs ('A', 'Z') (mkStdGen 42))
 
+  -- Print the selected letters
+  putStrLn $ "Randomly selected letters: " ++ show randomLetters
+  putStrLn "Game ready."
 
-  --table in brick 
-  --first line is the letters they're played, second line is letts they've played, third line is the arrow for currently selected letter
+{-
+  Allow user to give a number of items they'll want to use
+-}
+initialize :: IO ([String], Map.Map Char Int)
+initialize = do
+  -- Set the dictionary and scoring variables
+  let dictionaryInputFile = "Dictionaries/01-Dictionary.txt"
+      scoreInputFile = "Dictionaries/01-Scoring.txt"
 
-  --create functin to create the state 
+  -- Load the dictionary and scoring data
+  dictionary <- loadDictionary dictionaryInputFile
+  scoring <- loadScoringData scoreInputFile
 
-  
-  {-
-    Function to check if a word exists in the dictionary.
-      - Takes a String as input 
-      - Takes a String for the dictionary name (since we might have multiple)
-      - Returns the String if it exists
-      - Returns null if it isn't in the dictionary
-    
-    We can probably change this to return a bool later, I think returning the word will make troubleshooting 
-    easier at first. 
-    
-    findWord <SEARCH-TERM> -> <DICTIONARY-FILE-NAME> -> <RETURN>
+  -- Return dictionary and scoring data
+  return (dictionary, scoring)
 
-    ** reference shrinkDictionary
-  -}
-  -- findWord :: [Char] -> [Char] -> [Char]
-  -- findWord x y = undefined
+-- | Load the dictionary from file
+loadDictionary :: FilePath -> IO [String]
+loadDictionary dictionaryInputFile = do
+  contents <- readFile dictionaryInputFile
+  return (lines contents)
 
+-- | Load the scoring data from file
+loadScoringData :: FilePath -> IO (Map.Map Char Int)
+loadScoringData scoreInputFile = do
+  -- Implement your logic to load scoring data here
+  -- For now, let's assume we have some default scoring data
+  return (Map.fromList [('A', 1), ('B', 3), ('C', 3), ('D', 2), ('E', 1)])
 
-  {-
-    Function to shrink the dictionary, lets just take in the wordSize and return a subdictionary that only contains 
-    1. words of <= wordSize
-    2. words that only contain the user's letters
-
-    Takes in an int and [Char], and retunrs a [[Char]] with all valid words in our new subdictionary
-  -}
-  -- shrinkDictionary :: int -> [Char] -> [[Char]]
-
-  {-
-    Calculate score function. 
-      - Takes a string as input 
-      - returns an int as output
-    
-    Here, we can just hard-code values for each letter, similar to how scrabble works, and add a multiplier for length of word
-
-  -}
-  -- scoreWord :: [Char] -> int
-  -- scoreWord x = undefined
-
-  {-
-    Fucntion takes scoring and returns tuple (<LETTER>, <SCORE>)
-  -}
-  -- scores :: [Char] -> (Char, Int)
-  -- -- read the scoring input
-  -- contents = readFile scoring
-  -- scores xs = (head xs, read (tail xs) :: 1)
-  -- putStrLn $ show $ scores "A"
+-- | Get number input from the user
+getNumberInput :: IO Int
+getNumberInput = do
+  input <- getLine
+  case reads input of
+    [(n, "")] -> return n
+    _ -> do
+      putStrLn "Invalid input. Please enter a valid number."
+      getNumberInput
