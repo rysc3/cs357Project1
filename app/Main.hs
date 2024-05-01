@@ -120,7 +120,15 @@ sortLeaderboard :: [(Int, String, String)] -> [(Int, String, String)]
 sortLeaderboard = sortBy (flip compare `on` (\(score, _, _) -> score))
 
 showSettings :: IO ()
-showSettings = putStrLn "Showing the settings..."
+showSettings = do
+  putStrLn "At some point, I'll put some settings here"
+  putStrLn "1 - Back"
+  input <- getLine
+  case input of
+    "1" -> preGameLoop
+    _ -> do
+      putStrLn "Invalid option. Please select again."
+      showSettings
 
 quitGame :: IO ()
 quitGame = do
