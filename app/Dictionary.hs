@@ -46,8 +46,8 @@ contains :: String -> Trie -> Bool
 contains [] trie = endOfWord trie
 contains (x : xs) trie = maybe False (contains xs) (M.lookup x (children trie))
 
-buildDictionary :: String -> Trie
-buildDictionary s = foldr insert emptyTrie (getListOfStrings s)
+buildDictionary :: [String] -> Trie
+buildDictionary s = foldr insert emptyTrie s
 
 {-
   Dictionary file is read in in the format "word\r\nword\r\nword\r\n", this function 

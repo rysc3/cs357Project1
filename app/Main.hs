@@ -6,6 +6,7 @@ module Main where
 import Control.Monad (when)
 -- things for leaderboard --
 
+import Dictionary(Trie, buildDictionary, contains, getListOfStrings)
 import Data.Function (on)
 import Data.List (insertBy, sortBy)
 import Data.Time.Clock
@@ -47,12 +48,13 @@ preGameLoop = do
       putStrLn "Invalid option. Please select again."
       preGameLoop
 
-initialize :: IO ([String], [(Char, Int)], FilePath)
+initialize :: IO (Trie, [(Char, Int)], FilePath)
 initialize = do
   let dictionaryInputFile = "Dictionaries/01-Dictionary.txt"
       scoreInputFile = "Dictionaries/01-Scoring.txt"
       leaderboardFile = "Dictionaries/Leaderboard.csv"
-  dictionary <- loadDictionary dictionaryInputFile
+      dictionaryInput = loadDictionary dictionaryInputFile
+  dictionary <- buildDictionary <$> dictionaryInput
   scoring <- getScoringData scoreInputFile
   return (dictionary, scoring, leaderboardFile)
   where
@@ -213,15 +215,20 @@ formatEntry (score, date, name) = show score ++ ", " ++ date ++ ", " ++ name
 {-
       -- START MAIN GAME LOOP --
 -}
-gameLoop :: [String] -> [(Char, Int)] -> String -> Int -> [(String, Int)] -> IO ()
+gameLoop :: Trie -> [(Char, Int)] -> String -> Int -> [(String, Int)] -> IO ()
 gameLoop dictionary scoring randomLetters totalScore wordScores = do
   word <- getLine
-  let score = getWordScore word scoring
-      newTotalScore = totalScore + score
-      letterFormat = unwords $ map (\c -> [c] ++ replicate 5 ' ') randomLetters
-  mapM_ (\(w, s) -> putStrLn $ w ++ replicate (10 - length w) '.' ++ replicate (6 - length (show s)) ' ' ++ show s) (reverse wordScores)
-  putStrLn $ replicate 23 '-'
-  putStrLn $ letterFormat ++ " => " ++ show newTotalScore
+  if (not . contains word) dictionary
+    then do
+      putStrLn "Invalid word. Please try again."
+      gameLoop dictionary scoring randomLetters totalScore wordScores
+  else
+    let score = getWordScore word scoring
+        newTotalScore = totalScore + score
+        letterFormat = unwords $ map (\c -> [c] ++ replicate 5 ' ') randomLetters
+    mapM_ (\(w, s) -> putStrLn $ w ++ replicate (10 - length w) '.' ++ replicate (6 - length (show s)) ' ' ++ show s) (reverse wordScores)
+    putStrLn $ replicate 23 '-'
+    putStrLn $ letterFormat ++ " => " ++ show newTotalScore
   if null word
     then saveQuitGame newTotalScore
     else gameLoop dictionary scoring randomLetters newTotalScore ((word, score) : wordScores)
