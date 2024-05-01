@@ -1,9 +1,9 @@
-module Dictionary
-  ( buildDictionary,
-    contains,
-    getListOfStrings,
-  )
-where
+module Dictionary(
+  Trie,
+  buildDictionary,
+  contains,
+  getListOfStrings
+) where
 
 import qualified Data.Map.Strict as M
 import Data.Text (pack, splitOn, unpack, toUpper)
