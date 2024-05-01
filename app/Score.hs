@@ -1,7 +1,7 @@
 module Score (
   getScoringData,  -- Public methods main can see
-  getLetterScore,
-  getWordScore
+  getWordScore,
+  getLetterScore
 ) where 
 
 import Data.Char (toUpper)  -- for getScores method

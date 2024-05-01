@@ -2,7 +2,7 @@ module Main where
 
 -- Internal imports
 import Tests (runAllTests)
-import Score (getLetterScore, getScoringData)
+import Score (getWordScore, getScoringData)
 import Dictionary (buildDictionary, contains, getListOfStrings)
 
 -- External imports
@@ -117,7 +117,23 @@ quitGame = do
       -- START MAIN GAME LOOP --
 -}
 gameLoop :: [String] -> [(Char, Int)] -> String -> IO ()
-gameLoop dictionary scoring randomLetters = undefined
+gameLoop dictionary scoring randomLetters = do
+  putStrLn "Enter a word:"
+  word <- getLine
+  putStrLn $ word ++ " => " ++ show (getWordScore word scoring)
+  putStrLn $ "My Letters: " ++ show randomLetters
+  putStrLn "Enter another word or press Enter to finish:"
+  nextWord <- getLine
+  if null nextWord
+    then return ()  -- Finish the game loop
+    else gameLoop dictionary scoring randomLetters
+
+
+getLetterScore :: Char -> [(Char, Int)] -> Int
+getLetterScore c scoring = case lookup c scoring of
+  Just score -> score
+  Nothing    -> 0
+
 {-
       -- END MAIN GAME LOOP --
 -}
