@@ -65,6 +65,8 @@ initialize = do
       -- END INITIALIZE LOGIC --
 -}
 
+
+
 {-
       -- START GAME STATES --
 -}
@@ -107,7 +109,6 @@ showLeaderboard = do
   contents <- readFile leaderboardFile
   parsedEntries <- forM (lines contents) parseEntry
   let numLines = length $ lines contents
-  putStrLn $ "Lines: " ++ show numLines
   let validEntries = catMaybes parsedEntries
       sortedEntries = sortLeaderboard validEntries
       numEntries = length sortedEntries
@@ -115,9 +116,6 @@ showLeaderboard = do
       topEntries = take maxEntriesToShow sortedEntries
   mapM_ putStrLn (map formatEntry topEntries)
   preGameLoop
-
-sortLeaderboard :: [(Int, String, String)] -> [(Int, String, String)]
-sortLeaderboard = sortBy (flip compare `on` (\(score, _, _) -> score))
 
 showSettings :: IO ()
 showSettings = do
@@ -156,6 +154,8 @@ saveQuitGame totalScore = do
       -- END GAME STATES --
 -}
 
+
+
 {-
       -- START LEADERBOARD LOGIC --
 -}
@@ -166,6 +166,9 @@ addToLeaderboard score name = do
       newEntry = (score, date, name)
   withFile "Dictionaries/Leaderboard.csv" AppendMode $ \handle -> do
     hPutStrLn handle (formatEntry newEntry)
+
+sortLeaderboard :: [(Int, String, String)] -> [(Int, String, String)]
+sortLeaderboard = sortBy (flip compare `on` (\(score, _, _) -> score))
 
 {-
   Logic to parse leaderboard and sort. 
@@ -202,8 +205,10 @@ formatEntry :: (Int, String, String) -> String
 formatEntry (score, date, name) = show score ++ ", " ++ date ++ ", " ++ name
 
 {-
-      -- START LEADERBOARD LOGIC --
+      -- END LEADERBOARD LOGIC --
 -}
+
+
 
 {-
       -- START MAIN GAME LOOP --
