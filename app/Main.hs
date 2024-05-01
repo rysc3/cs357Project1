@@ -15,8 +15,8 @@ main = do
   let scoreInputFile = "Dictionaries/01-Scoring.txt"                   -- scoring     -- TODO figure out how to take user input for these
   let wordSize = 7                            -- # of letters we give the player, we can take input and set this to what they want to play with
 
-  runAllTests dictionaryInputFile scoreInputFile
-  BM.run
+  -- runAllTests dictionaryInputFile scoreInputFile
+  BM.main
 
 
 
