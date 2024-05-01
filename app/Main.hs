@@ -7,7 +7,6 @@ import Dictionary (buildDictionary, contains, getListOfStrings)
 
 -- External imports
 import Control.Monad (when)
-import qualified Data.Map as Map
 import Options.Applicative ()
 import System.Exit (exitSuccess)
 import System.Random (mkStdGen, randomRs)
@@ -15,22 +14,22 @@ import System.Random (mkStdGen, randomRs)
 -- | Main function to start the game
 main :: IO ()
 main = do
-  putStrLn "Welcome to the game"
+  preGameLoop
+
+{-
+      -- BEGIN INITIALIZE LOGIC --
+-}
+preGameLoop :: IO ()
+preGameLoop = do
+  putStrLn "\n------------------"
   putStrLn "Select an option:"
   putStrLn "1 - Play"
   putStrLn "2 - Leaderboard"
   putStrLn "3 - Settings"
   putStrLn "4 - Back/Quit"
-
-
-  loop
-
-{-
-      -- BEGIN INITIALIZE LOGIC --
--}
-loop :: IO ()
-loop = do
+  putStrLn "\n---"
   input <- getLine
+  putStrLn "---\n"
   case input of
     "1" -> startGame
     "2" -> showLeaderboard
@@ -38,30 +37,23 @@ loop = do
     "4" -> quitGame
     _   -> do
       putStrLn "Invalid option. Please select again."
-      loop
+      preGameLoop
 
-{-
-  type Score = (Char, Int), which is what we use in Scoring Data.
 
-  method initializes the default dictionary and scoring data
--}
-initialize :: IO ([String], [(Char, Int)])
+initialize :: IO ([String], [(Char, Int)], FilePath)
 initialize = do
-  -- Set the dictionary and scoring variables
   let dictionaryInputFile = "Dictionaries/01-Dictionary.txt"
       scoreInputFile = "Dictionaries/01-Scoring.txt"
-
-  -- Load the dictionary and scoring data
+      leaderboardFile = "Dictionaries/Leaderboard.csv"
   dictionary <- loadDictionary dictionaryInputFile
   scoring <- getScoringData scoreInputFile
-
-  -- Return dictionary and scoring data
-  return (dictionary, scoring)
+  return (dictionary, scoring, leaderboardFile)
   where 
     loadDictionary :: FilePath -> IO [String]
     loadDictionary dictionaryInputFile = do
       contents <- readFile dictionaryInputFile
       return (lines contents)
+
 {-
       -- END INITIALIZE LOGIC --
 -}
@@ -73,11 +65,13 @@ initialize = do
 -}
 startGame :: IO ()
 startGame = do
+  putStrLn "\n------------------"
   putStrLn "Starting the game..."
-  (dictionary, scoring) <- initialize
+  (dictionary, scoring, _) <- initialize
   putStrLn "How many letters would you like to play with?"
+  putStrLn "\n---"
   numLetters <- getNumberInput
-
+  putStrLn "---\n"
   randomLetters <- generateRandomLetters numLetters
   putStrLn $ "Randomly selected letters: " ++ show randomLetters
   gameLoop dictionary scoring randomLetters
@@ -98,7 +92,13 @@ generateRandomLetters numLetters = do
   return randomLetters
 
 showLeaderboard :: IO ()
-showLeaderboard = putStrLn "Showing the leaderboard..."
+showLeaderboard = do
+  putStrLn "Showing the leaderboard..."
+  (_, _, leaderboardFile) <- initialize
+  contents <- readFile leaderboardFile
+  let leaderboardEntries = take 10 (lines contents)
+  mapM_ putStrLn leaderboardEntries
+  preGameLoop 
 
 showSettings :: IO ()
 showSettings = putStrLn "Showing the settings..."
@@ -107,6 +107,7 @@ quitGame :: IO ()
 quitGame = do
   putStrLn "Quitting the game..."
   exitSuccess
+
 {-
       -- END GAME STATES --
 -}
@@ -127,13 +128,3 @@ gameLoop dictionary scoring randomLetters = do
   if null nextWord
     then return ()  -- Finish the game loop
     else gameLoop dictionary scoring randomLetters
-
-
-getLetterScore :: Char -> [(Char, Int)] -> Int
-getLetterScore c scoring = case lookup c scoring of
-  Just score -> score
-  Nothing    -> 0
-
-{-
-      -- END MAIN GAME LOOP --
--}
