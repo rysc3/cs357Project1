@@ -18,30 +18,31 @@ import qualified Graphics.Vty as V
 main :: IO ()
 main = preGameLoop
 
-data AppState = AppState
+data State = State
     { dictionary :: [String]
     , scoring :: [(Char, Int)]
     , leaderboardFile :: FilePath
     , gameState :: GameState
+    , totalScore :: Int
     }
 
 data GameState = PreGame | Playing | ShowingLeaderboard | ShowingSettings
 
-initialState :: IO AppState
+initialState :: IO State
 initialState = do
   let dictionaryInputFile = "Dictionaries/01-Dictionary.txt"
       scoreInputFile = "Dictionaries/01-Scoring.txt"
       leaderboardFile = "Dictionaries/Leaderboard.csv"
   dictionary <- loadDictionary dictionaryInputFile
   scoring <- getScoringData scoreInputFile
-  return $ AppState dictionary scoring leaderboardFile PreGame
+  return $ State dictionary scoring leaderboardFile PreGame 0
   where
     loadDictionary :: FilePath -> IO [String]
     loadDictionary dictionaryInputFile = do
       contents <- readFile dictionaryInputFile
       return (lines contents)
 
-app :: App AppState e ()
+app :: App State e ()
 app = App
     { appDraw = drawUI
     , appChooseCursor = neverShowCursor
@@ -50,7 +51,7 @@ app = App
     , appAttrMap = const $ attrMap V.defAttr []
     }
 
-drawUI :: AppState -> [Widget ()]
+drawUI :: State -> [Widget ()]
 drawUI st =
     case gameState st of
         PreGame -> drawPreGameUI
@@ -84,7 +85,7 @@ drawUI st =
                      ]
             ]
 
-drawContent :: AppState -> Widget ()
+drawContent :: State -> Widget ()
 drawContent st =
     vBox [ str "How many letters would you like to play with?"
          , str ""
@@ -95,24 +96,14 @@ drawContent st =
     where
         randomLetters = take (numLetters st) $ randomRs ('A', 'Z') (mkStdGen 42)
 
-handleEvent :: AppState -> BrickEvent () e -> EventM () (Next AppState)
-handleEvent st (VtyEvent (V.EvKey (V.KChar '1') [])) = continue $ st { gameState = Playing }
-handleEvent st (VtyEvent (V.EvKey (V.KChar '2') [])) = continue $ st { gameState = ShowingLeaderboard }
-handleEvent st (VtyEvent (V.EvKey (V.KChar '3') [])) = continue $ st { gameState = ShowingSettings }
-handleEvent st (VtyEvent (V.EvKey (V.KChar '4') [])) = liftIO $ quitGame
-handleEvent st (VtyEvent (V.EvKey V.KEnter [])) =
-    case gameState st of
-        Playing -> do
-            let totalScore = calculateTotalScore st
-            liftIO $ saveQuitGame totalScore
-            continue $ st { totalScore = totalScore }
-        _ -> continue st
-handleEvent st _ = continue st
 
-calculateTotalScore :: AppState -> Int
+
+
+
+calculateTotalScore :: State -> Int
 calculateTotalScore st = sum $ map snd (wordScores st)
 
-parseLeaderboard :: AppState -> [(Int, String, String)]
+parseLeaderboard :: State -> [(Int, String, String)]
 parseLeaderboard st =
     let contents = readFile (leaderboardFile st)
         parsedEntries = mapMaybe parseEntry contents
@@ -137,15 +128,15 @@ formatEntry :: (Int, String, String) -> String
 formatEntry (score, date, name) = show score ++ ", " ++ date ++ ", " ++ name
 
 sortLeaderboard :: [(Int, String, String)] -> [(Int, String, String)]
-sortLeaderboard = sortBy (flip compare `on` (\(score, _, _) -> score))
+sortLeaderboard = sortBy (flip compare `Data.Function.on` (\(score, _, _) -> score))
 
 quitGame :: IO ()
 quitGame = do
   putStrLn "Quitting the game..."
   exitSuccess
 
-saveQuitGame :: Int -> IO ()
-saveQuitGame totalScore = do
+saveQuitGame :: State -> Int -> IO ()
+saveQuitGame st totalScore = do
   putStrLn "------------------"
   putStrLn "Quitting the game..."
   putStrLn "Please enter your name:"
@@ -153,4 +144,30 @@ saveQuitGame totalScore = do
   name <- getLine
   putStrLn "---"
   currentTime <- getCurrentTime
-  let formattedDate = formatTime defaultTimeLocale
+  let formattedDate = formatTime defaultTimeLocale "%-m/%-d" currentTime
+  putStrLn "------------------"
+  putStrLn $ "Today's date: " ++ formattedDate
+  addToLeaderboard st totalScore name
+  putStrLn "Saving to leaderboard"
+  putStrLn "------------------"
+  preGameLoop -- go back to title screen
+
+addToLeaderboard :: State -> Int -> String -> IO ()
+addToLeaderboard st score name = do
+  currentTime <- getCurrentTime
+  let date = formatTime defaultTimeLocale "%m/%d" currentTime
+      newEntry = (score, date, name)
+  withFile (leaderboardFile st) AppendMode $ \handle -> do
+    hPutStrLn handle (formatEntry newEntry)
+
+preGameLoop :: IO ()
+preGameLoop = do
+  putStrLn "------------------"
+  putStrLn "Select an option:"
+  putStrLn "1 - Play"
+  putStrLn "2 - Leaderboard"
+  putStrLn "3 - Settings"
+  putStrLn "4 - Quit"
+  putStrLn "\n---"
+  initialState >>= defaultMain app
+
