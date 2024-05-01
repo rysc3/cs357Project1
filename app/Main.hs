@@ -13,6 +13,7 @@ main = do
       wordSize = 7                            -- # of letters we give the player, we can take input and set this to what they want to play with
 
 
+  -- let contents = readFile dictionaryInputFile
   contents <- readFile dictionaryInputFile
   let dictionary = buildDictionary contents
 
