@@ -1,39 +1,51 @@
 module Main where
 
--- imports
+-- Internal imports
+import Tests (runAllTests)
+import Score (getLetterScore, getScoringData)
+import Dictionary (buildDictionary, contains, getListOfStrings)
 
+-- External imports
 import Control.Monad (when)
 import qualified Data.Map as Map
-import Dictionary (buildDictionary, contains, getListOfStrings)
-import Options.Applicative
-import Score (getLetterScore, getScoringData)
+import Options.Applicative ()
 import System.Exit (exitSuccess)
 import System.Random (mkStdGen, randomRs)
-import Tests (runAllTests)
-
--- Define your data types here if necessary
 
 -- | Main function to start the game
 main :: IO ()
 main = do
-  -- Initialize the game
-  (dictionary, scoring) <- initialize
+  putStrLn "Welcome to the game"
+  putStrLn "Select an option:"
+  putStrLn "1 - Play"
+  putStrLn "2 - Leaderboard"
+  putStrLn "3 - Settings"
+  putStrLn "4 - Back/Quit"
 
-  -- Prompt the user to pick the number of letters
-  putStrLn "How many letters would you like to play with?"
-  numLetters <- getNumberInput
 
-  -- Generate random letters
-  let randomLetters = take numLetters (randomRs ('A', 'Z') (mkStdGen 42))
-
-  -- Print the selected letters
-  putStrLn $ "Randomly selected letters: " ++ show randomLetters
-  putStrLn "Game ready."
+  loop
 
 {-
-  Allow user to give a number of items they'll want to use
+      -- BEGIN INITIALIZE LOGIC --
 -}
-initialize :: IO ([String], Map.Map Char Int)
+loop :: IO ()
+loop = do
+  input <- getLine
+  case input of
+    "1" -> startGame
+    "2" -> showLeaderboard
+    "3" -> showSettings
+    "4" -> quitGame
+    _   -> do
+      putStrLn "Invalid option. Please select again."
+      loop
+
+{-
+  type Score = (Char, Int), which is what we use in Scoring Data.
+
+  method initializes the default dictionary and scoring data
+-}
+initialize :: IO ([String], [(Char, Int)])
 initialize = do
   -- Set the dictionary and scoring variables
   let dictionaryInputFile = "Dictionaries/01-Dictionary.txt"
@@ -41,30 +53,71 @@ initialize = do
 
   -- Load the dictionary and scoring data
   dictionary <- loadDictionary dictionaryInputFile
-  scoring <- loadScoringData scoreInputFile
+  scoring <- getScoringData scoreInputFile
 
   -- Return dictionary and scoring data
   return (dictionary, scoring)
+  where 
+    loadDictionary :: FilePath -> IO [String]
+    loadDictionary dictionaryInputFile = do
+      contents <- readFile dictionaryInputFile
+      return (lines contents)
+{-
+      -- END INITIALIZE LOGIC --
+-}
 
--- | Load the dictionary from file
-loadDictionary :: FilePath -> IO [String]
-loadDictionary dictionaryInputFile = do
-  contents <- readFile dictionaryInputFile
-  return (lines contents)
 
--- | Load the scoring data from file
-loadScoringData :: FilePath -> IO (Map.Map Char Int)
-loadScoringData scoreInputFile = do
-  -- Implement your logic to load scoring data here
-  -- For now, let's assume we have some default scoring data
-  return (Map.fromList [('A', 1), ('B', 3), ('C', 3), ('D', 2), ('E', 1)])
 
--- | Get number input from the user
+{-
+      -- START GAME STATES --
+-}
+startGame :: IO ()
+startGame = do
+  putStrLn "Starting the game..."
+  (dictionary, scoring) <- initialize
+  putStrLn "How many letters would you like to play with?"
+  numLetters <- getNumberInput
+
+  randomLetters <- generateRandomLetters numLetters
+  putStrLn $ "Randomly selected letters: " ++ show randomLetters
+  gameLoop dictionary scoring randomLetters
+
 getNumberInput :: IO Int
 getNumberInput = do
   input <- getLine
-  case reads input of
-    [(n, "")] -> return n
-    _ -> do
-      putStrLn "Invalid input. Please enter a valid number."
-      getNumberInput
+  let numLetters = read input :: Int
+  if numLetters < 1 || numLetters > 7
+    then do
+      putStrLn "Invalid number of letters. Please enter a number between 1 and 7."
+      getNumberInput  -- Retry input
+    else return numLetters
+
+generateRandomLetters :: Int -> IO String
+generateRandomLetters numLetters = do
+  let randomLetters = take numLetters (randomRs ('A', 'Z') (mkStdGen 42))
+  return randomLetters
+
+showLeaderboard :: IO ()
+showLeaderboard = putStrLn "Showing the leaderboard..."
+
+showSettings :: IO ()
+showSettings = putStrLn "Showing the settings..."
+
+quitGame :: IO ()
+quitGame = do
+  putStrLn "Quitting the game..."
+  exitSuccess
+{-
+      -- END GAME STATES --
+-}
+
+
+
+{-
+      -- START MAIN GAME LOOP --
+-}
+gameLoop :: [String] -> [(Char, Int)] -> String -> IO ()
+gameLoop dictionary scoring randomLetters = undefined
+{-
+      -- END MAIN GAME LOOP --
+-}

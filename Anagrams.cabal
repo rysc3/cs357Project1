@@ -19,14 +19,14 @@ executable Anagrams
 
     other-modules:    Score, Dictionary, Tests
 
-    build-depends:    base ^>=4.17.2.1, 
+    build-depends:    base ^>=4.17.2.1 && < 5, 
                       containers, 
                       text, 
-                      brick, 
+                      brick >= 0.50, 
                       vty, 
                       vty-crossplatform, 
                       optparse-applicative, 
-                      random
+                      random,
 
     hs-source-dirs:   app
 
