@@ -74,7 +74,7 @@ startGame = do
   putStrLn "---\n"
   randomLetters <- generateRandomLetters numLetters
   putStrLn $ "Randomly selected letters: " ++ show randomLetters
-  gameLoop dictionary scoring randomLetters
+  gameLoop dictionary scoring randomLetters []
 
 getNumberInput :: IO Int
 getNumberInput = do
@@ -117,14 +117,15 @@ quitGame = do
 {-
       -- START MAIN GAME LOOP --
 -}
-gameLoop :: [String] -> [(Char, Int)] -> String -> IO ()
-gameLoop dictionary scoring randomLetters = do
-  putStrLn "Enter a word:"
+gameLoop :: [String] -> [(Char, Int)] -> String -> [(String, Int)] -> IO ()
+gameLoop dictionary scoring randomLetters wordScores = do
   word <- getLine
-  putStrLn $ word ++ " => " ++ show (getWordScore word scoring)
-  putStrLn $ "My Letters: " ++ show randomLetters
-  putStrLn "Enter another word or press Enter to finish:"
-  nextWord <- getLine
-  if null nextWord
+  let score = getWordScore word scoring
+      totalScore = sum $ map snd wordScores
+      letterFormat = unwords $ map (\c -> [c] ++ replicate 5 ' ') randomLetters
+  mapM_ (\(w, s) -> putStrLn $ w ++ replicate (10 - length w) '.' ++ replicate (6 - length (show s)) ' ' ++ show s) (reverse wordScores)
+  putStrLn $ replicate 23 '-'
+  putStrLn $ letterFormat ++ " => " ++ show totalScore
+  if null word
     then return ()  -- Finish the game loop
-    else gameLoop dictionary scoring randomLetters
+    else gameLoop dictionary scoring randomLetters ((word, score) : wordScores)
