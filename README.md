@@ -73,6 +73,24 @@ This will show you the top 10 scores, in sorted order, with the corresponding da
       468,  05/01,  asdf
 
 
+### Settings
+# TODO 
+The settings allow you to change game rules. You can select different point schemes or languages. You can also change the timelimit here. 
+
+It is not functional yet.
+
+      ------------------
+      Select an option:
+      1 - Play
+      2 - Leaderboard
+      3 - Settings
+      4 - Back/Quit
+
+      ---
+      3
+      ---
+      At some point, I'll put some settings here
+      1 - Back
 
 
 
@@ -82,7 +100,9 @@ This will show you the top 10 scores, in sorted order, with the corresponding da
 - GHCI 9.4.8
 - brick >= 0.50.0
 
-### Usage 
+### Download & run
 `git clone https://github.com/rysc3/proj1`
+
 `cd proj1`
+
 `cabal run`
