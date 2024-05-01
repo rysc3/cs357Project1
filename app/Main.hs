@@ -1,173 +1,115 @@
 module Main where
 
-import Control.Monad (forM, when)
-import Data.Function (on)
-import Data.List (insertBy, sortBy)
-import Data.Maybe (catMaybes, mapMaybe)
+-- Internal imports
+
+-- External imports
+import Control.Monad (when)
+-- things for leaderboard --
+
+import Dictionary(Trie, buildDictionary, contains, getListOfStrings)
 import Data.Time.Clock
 import Data.Time.Format
-import System.Exit (exitSuccess)
-import System.IO
-import System.Random (mkStdGen, randomRs)
+import Score (getScoringData, getWordScore)
 
-import Brick
+import Brick.Main (App(..), defaultMain, neverShowCursor, resizeOrQuit)
+import Brick.Types (Widget, BrickEvent(..), EventM, get, put)
+import Brick.Widgets.Core (str, withAttr, (<+>), vBox)
+import Brick.Widgets.Table (table, renderTable)
 import Brick.Widgets.Border (border)
-import Brick.Widgets.Center (vCenter)
+import Brick.AttrMap (AttrMap, attrMap, AttrName, attrName)
+import Brick.Util (fg)
+
 import qualified Graphics.Vty as V
 
+import Data.Char (isAlpha)
+
+
+
+
 main :: IO ()
-main = preGameLoop
+main = do
+  initialize >>= startGame
 
-data State = State
-    { dictionary :: [String]
-    , scoring :: [(Char, Int)]
-    , leaderboardFile :: FilePath
-    , gameState :: GameState
-    , totalScore :: Int
-    }
+data State = {
+  dictionary :: Trie,
+  scoring :: [(Char, Int)],
+  playedLetters :: String,
+  availLetters:: String,
+}
 
-data GameState = PreGame | Playing | ShowingLeaderboard | ShowingSettings
-
-initialState :: IO State
-initialState = do
+initialize :: IO (Trie, [(Char, Int)], FilePath)
+initialize = do
   let dictionaryInputFile = "Dictionaries/01-Dictionary.txt"
       scoreInputFile = "Dictionaries/01-Scoring.txt"
       leaderboardFile = "Dictionaries/Leaderboard.csv"
-  dictionary <- loadDictionary dictionaryInputFile
+      dictionaryInput = loadDictionary dictionaryInputFile
+  dictionary <- buildDictionary <$> dictionaryInput
   scoring <- getScoringData scoreInputFile
-  return $ State dictionary scoring leaderboardFile PreGame 0
+  return (dictionary, scoring, leaderboardFile)
   where
     loadDictionary :: FilePath -> IO [String]
     loadDictionary dictionaryInputFile = do
       contents <- readFile dictionaryInputFile
       return (lines contents)
 
-app :: App State e ()
-app = App
-    { appDraw = drawUI
-    , appChooseCursor = neverShowCursor
-    , appHandleEvent = handleEvent
-    , appStartEvent = return
-    , appAttrMap = const $ attrMap V.defAttr []
-    }
+sortLeaderboard :: [(Int, String, String)] -> [(Int, String, String)]
+sortLeaderboard = sortBy (flip compare `on` (\(score, _, _) -> score))
+
+--removes letter from list of available letters
+removeLetter :: Char -> [Char] -> [Char] 
+playLetter c avail = filter (/= c) avail
+
+getLastLetter :: [Char] -> Char
+getLastLetter [] = ' '
+getLastLetter (x:xs) = if null xs then x else getLastLetter xs
+
+--takes letter to be played, adds it to end of list of played letters 
+addLetter :: Char -> [Char] -> [Char]
+addLetter c xs = xs ++ [c]
+
+addLetters :: String -> [Char] -> [Char]
+addLetters [] avail = avail
+addLetters (c:cs) avail = addLetters cs (removeLetter c avail)
+
+drawavailLetters :: [Char] -> Widget ()
+drawavailLetters avail = str $ "Your Letters: " ++ avail
+
+drawPlayedLetters :: [Char] -> Widget ()
+drawPlayed played = str $ "Current Play: " ++ played
+
+drawScore :: Int -> Widget ()
+drawScore score = str $ "Total Score: " ++ show score
 
 drawUI :: State -> [Widget ()]
-drawUI st =
-    case gameState st of
-        PreGame -> drawPreGameUI
-        Playing -> drawPlayingUI st
-        ShowingLeaderboard -> drawLeaderboardUI st
-        ShowingSettings -> drawSettingsUI
-    where
-        drawPreGameUI =
-            [ border $ vCenter $ hCenter $
-                vBox [ str "Select an option:"
-                     , str "1 - Play"
-                     , str "2 - Leaderboard"
-                     , str "3 - Settings"
-                     , str "4 - Quit"
-                     ]
-            ]
+drawUI s = [drawavailLetters (availLetters s), 
+            drawPlayedLetters (playedLetters s),
+            drawScore (getWordScore (playedLetters s) (scoring s))]
 
-        drawPlayingUI st' =
-            [ border $ vCenter $ hCenter $ drawContent st'
-            ]
+handleEvent :: BrickEvent () () -> EventM () St ()
+handleEvent (VtyEvent (V.EvKey V.KEnter _)) = do
+  s <- get
+  let word = playedLetters s
+  if contains word (dictionary s)
+    then do
+      let score = getWordScore word (scoring s)
+      put $ s {playedLetters = "", availLetters = addLetters word (availLetters s)}
+      return ()
+    else return ()
+handleEvent (VtyEvent (V.EvKey (V.KChar c) _)) = do
+  s <- get
+  put $ s {playedLetters = addLetter c (playedLetters s), availLetters = removeLetter c (availLetters s)}
+  return ()
+handleEvent (VtyEvent (V.EvKey (V.KChar back) _)) = do
+  s <- get
+  then do 
+    let lastLetter = getLastLetter (playedLetters s)
+    put $ s {playedLetters = filter (/= lastLetter) (playedLetters s), availLetters = (availLetters s) ++ [lastLetter]}
+  return ()
 
-        drawLeaderboardUI st' =
-            [ border $ vCenter $ hCenter $
-                vBox $ map (str . formatEntry) $ take 10 $ sortLeaderboard $ parseLeaderboard st'
-            ]
-
-        drawSettingsUI =
-            [ border $ vCenter $ hCenter $
-                vBox [ str "At some point, I'll put some settings here"
-                     , str "1 - Back"
-                     ]
-            ]
-
-drawContent :: State -> Widget ()
-drawContent st =
-    vBox [ str "How many letters would you like to play with?"
-         , str ""
-         , str "Press Enter to confirm"
-         , str ""
-         , str $ "Randomly selected letters: " ++ randomLetters
-         ]
-    where
-        randomLetters = take (numLetters st) $ randomRs ('A', 'Z') (mkStdGen 42)
-
-
-
-
-
-calculateTotalScore :: State -> Int
-calculateTotalScore st = sum $ map snd (wordScores st)
-
-parseLeaderboard :: State -> [(Int, String, String)]
-parseLeaderboard st =
-    let contents = readFile (leaderboardFile st)
-        parsedEntries = mapMaybe parseEntry contents
-    in sortLeaderboard parsedEntries
-
-parseEntry :: String -> Maybe (Int, String, String)
-parseEntry entry
-    | null entry = Nothing  -- Skip empty lines
-    | otherwise =
-        let parts = wordsWhen (== ',') entry
-        in case parts of
-            [scoreStr, date, name] -> Just (read scoreStr, date, name)
-            _ -> Nothing
-
-wordsWhen :: (Char -> Bool) -> String -> [String]
-wordsWhen p s = case dropWhile p s of
-                      "" -> []
-                      s' -> w : wordsWhen p s''
-                            where (w, s'') = break p s'
-
-formatEntry :: (Int, String, String) -> String
-formatEntry (score, date, name) = show score ++ ", " ++ date ++ ", " ++ name
-
-sortLeaderboard :: [(Int, String, String)] -> [(Int, String, String)]
-sortLeaderboard = sortBy (flip compare `Data.Function.on` (\(score, _, _) -> score))
-
-quitGame :: IO ()
-quitGame = do
-  putStrLn "Quitting the game..."
-  exitSuccess
-
-saveQuitGame :: State -> Int -> IO ()
-saveQuitGame st totalScore = do
-  putStrLn "------------------"
-  putStrLn "Quitting the game..."
-  putStrLn "Please enter your name:"
-  putStrLn "---"
-  name <- getLine
-  putStrLn "---"
-  currentTime <- getCurrentTime
-  let formattedDate = formatTime defaultTimeLocale "%-m/%-d" currentTime
-  putStrLn "------------------"
-  putStrLn $ "Today's date: " ++ formattedDate
-  addToLeaderboard st totalScore name
-  putStrLn "Saving to leaderboard"
-  putStrLn "------------------"
-  preGameLoop -- go back to title screen
-
-addToLeaderboard :: State -> Int -> String -> IO ()
-addToLeaderboard st score name = do
-  currentTime <- getCurrentTime
-  let date = formatTime defaultTimeLocale "%m/%d" currentTime
-      newEntry = (score, date, name)
-  withFile (leaderboardFile st) AppendMode $ \handle -> do
-    hPutStrLn handle (formatEntry newEntry)
-
-preGameLoop :: IO ()
-preGameLoop = do
-  putStrLn "------------------"
-  putStrLn "Select an option:"
-  putStrLn "1 - Play"
-  putStrLn "2 - Leaderboard"
-  putStrLn "3 - Settings"
-  putStrLn "4 - Quit"
-  putStrLn "\n---"
-  initialState >>= defaultMain app
-
+app :: App St () ()
+app = App
+    { appDraw         = drawUI
+    , appChooseCursor = neverShowCursor
+    , appHandleEvent  = handleEvent
+    , appStartEvent   = return ()
+    }
