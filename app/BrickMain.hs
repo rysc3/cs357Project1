@@ -23,5 +23,4 @@ fullopts = info (helper <*> opts)
 
 main :: IO ()
 main = do
-  (Opts ph) <- execParser fullopts
-  when ph (putStrLn "Hello, World!" >> exitSuccess)
+  putStrLn "Hello, World!" >> exitSuccess
