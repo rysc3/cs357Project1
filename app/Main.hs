@@ -26,9 +26,9 @@ import Data.Char (isAlpha)
 
 
 
-main :: IO ()
-main = do 
-  initialize >>= defaultMain app initialize
+main = do
+  initialState <- initialize
+  defaultMain app initialState
 
 data State = State 
   { dictionary :: Trie,
@@ -37,13 +37,22 @@ data State = State
     availLetters:: String
   }
 
-initialize :: State
-initialize = State dictionary scoring "" "ABCDEF"
-  where 
-    dictionary = buildDictionary (loadDictionary "Dictionaries/01-Dictionary.txt")
-    scoring = getScoringData "Dictionaries/01-Scoring.txt"
-    loadDictionary :: FilePath -> IO [String]
-    loadDictionary dictionaryInputFile = (readFile dictionaryInputFile) 
+-- initialize :: IO State
+-- initialize = do
+--   scores <- getScoringData "Dictionaries/01-Scoring.txt"
+--   let scoring = map (\score -> (fst score, snd score)) scores
+--   contents <- readFile "Dictionaries/01-Dictionary.txt"
+--   let dictionary = buildDictionary (lines contents)
+--   return State dictionary scoring "" "ABCDEF"
+
+initialize :: IO State 
+initialize = do 
+  let dictionary = buildDictionary ["hello", "world", "this", "is", "a", "test"]
+  scores <- getScoringData "Dictionaries/01-Scoring.txt"
+  let playedLetters = ""
+  let availLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
+
 
 --removes letter from list of available letters
 removeLetter :: Char -> [Char] -> [Char] 
