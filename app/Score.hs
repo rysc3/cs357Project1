@@ -1,6 +1,7 @@
 module Score (
   getScoringData,  -- Public methods main can see
-  getLetterScore
+  getLetterScore,
+  getWordScore
 ) where 
 
 import System.IO
@@ -54,3 +55,17 @@ getLetterScore _ [] = 0
 getLetterScore x ((char, score):rest) 
   | x == char = score
   | otherwise = getLetterScore x rest
+
+getWordScore :: [Char] -> [Score] -> Int
+getWordScore word scores = calc3 word scores + calcBonus word scores
+  where 
+
+    calc3 word scores = sumLetterScores (take 3 word) scores
+      where
+        sumLetterScores [] _ = 0
+        sumLetterScores (x:xs) scores = getLetterScore x scores + sumLetterScores xs scores
+
+    calcBonus word scores = 7 * sumLetterScores (drop 3 word) scores
+      where
+        sumLetterScores [] _ = 0
+        sumLetterScores (x:xs) scores = getLetterScore x scores + sumLetterScores xs scores

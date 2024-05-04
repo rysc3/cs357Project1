@@ -43,8 +43,8 @@ contains :: String -> Trie -> Bool
 contains [] trie = endOfWord trie
 contains (x:xs) trie = maybe False (contains xs) (M.lookup x (children trie)) --need to handle for nothing or Just cases when called 
 
-buildDictionary :: String -> Trie
-buildDictionary s = foldr insert emptyTrie (getListOfStrings s)
+buildDictionary :: [String] -> Trie
+buildDictionary s = foldr insert emptyTrie s
 --string will have all words in dictionary, which we will split into a list of strings, then insert each string into the trie
 
 getListOfStrings :: String -> [String]

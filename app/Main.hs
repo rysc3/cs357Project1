@@ -27,37 +27,27 @@ import Data.Char (isAlpha)
 
 
 main :: IO ()
-main = do
-  initialize >>= startGame
+main = do 
+  initialize >>= defaultMain app initialize
 
-data State = {
-  dictionary :: Trie,
-  scoring :: [(Char, Int)],
-  playedLetters :: String,
-  availLetters:: String,
-}
+data State = State 
+  { dictionary :: Trie,
+    scoring :: [(Char, Int)],
+    playedLetters :: String,
+    availLetters:: String
+  }
 
-initialize :: IO (Trie, [(Char, Int)], FilePath)
-initialize = do
-  let dictionaryInputFile = "Dictionaries/01-Dictionary.txt"
-      scoreInputFile = "Dictionaries/01-Scoring.txt"
-      leaderboardFile = "Dictionaries/Leaderboard.csv"
-      dictionaryInput = loadDictionary dictionaryInputFile
-  dictionary <- buildDictionary <$> dictionaryInput
-  scoring <- getScoringData scoreInputFile
-  return (dictionary, scoring, leaderboardFile)
-  where
+initialize :: State
+initialize = State dictionary scoring "" "ABCDEF"
+  where 
+    dictionary = buildDictionary (loadDictionary "Dictionaries/01-Dictionary.txt")
+    scoring = getScoringData "Dictionaries/01-Scoring.txt"
     loadDictionary :: FilePath -> IO [String]
-    loadDictionary dictionaryInputFile = do
-      contents <- readFile dictionaryInputFile
-      return (lines contents)
-
-sortLeaderboard :: [(Int, String, String)] -> [(Int, String, String)]
-sortLeaderboard = sortBy (flip compare `on` (\(score, _, _) -> score))
+    loadDictionary dictionaryInputFile = (readFile dictionaryInputFile) 
 
 --removes letter from list of available letters
 removeLetter :: Char -> [Char] -> [Char] 
-playLetter c avail = filter (/= c) avail
+removeLetter c avail = filter (/= c) avail
 
 getLastLetter :: [Char] -> Char
 getLastLetter [] = ' '
@@ -75,7 +65,7 @@ drawavailLetters :: [Char] -> Widget ()
 drawavailLetters avail = str $ "Your Letters: " ++ avail
 
 drawPlayedLetters :: [Char] -> Widget ()
-drawPlayed played = str $ "Current Play: " ++ played
+drawPlayedLetters played = str $ "Current Play: " ++ played
 
 drawScore :: Int -> Widget ()
 drawScore score = str $ "Total Score: " ++ show score
@@ -85,7 +75,7 @@ drawUI s = [drawavailLetters (availLetters s),
             drawPlayedLetters (playedLetters s),
             drawScore (getWordScore (playedLetters s) (scoring s))]
 
-handleEvent :: BrickEvent () () -> EventM () St ()
+handleEvent :: BrickEvent () () -> EventM () State ()
 handleEvent (VtyEvent (V.EvKey V.KEnter _)) = do
   s <- get
   let word = playedLetters s
@@ -101,12 +91,11 @@ handleEvent (VtyEvent (V.EvKey (V.KChar c) _)) = do
   return ()
 handleEvent (VtyEvent (V.EvKey (V.KChar back) _)) = do
   s <- get
-  then do 
-    let lastLetter = getLastLetter (playedLetters s)
-    put $ s {playedLetters = filter (/= lastLetter) (playedLetters s), availLetters = (availLetters s) ++ [lastLetter]}
+  let lastLetter = getLastLetter (playedLetters s)
+  put $ s {playedLetters = filter (/= lastLetter) (playedLetters s), availLetters = (availLetters s) ++ [lastLetter]}
   return ()
 
-app :: App St () ()
+app :: App State () ()
 app = App
     { appDraw         = drawUI
     , appChooseCursor = neverShowCursor
