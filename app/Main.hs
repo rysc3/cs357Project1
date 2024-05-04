@@ -110,4 +110,5 @@ app = App
     , appChooseCursor = neverShowCursor
     , appHandleEvent  = handleEvent
     , appStartEvent   = return ()
+    , appAttrMap      = const $ attrMap V.defAttr [] -- I don't really know what this actually does but it makes things work lol
     }
