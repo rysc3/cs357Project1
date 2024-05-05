@@ -29,7 +29,7 @@ version:            0.1.0.0
 -- description:
 
 -- URL for the project homepage or repository.
-homepage:           https://github.com/rysc3/cs357/blob/main/proj1
+homepage:           https://github.com/rysc3/proj1
 
 -- The license under which the package is released.
 license:            MIT
@@ -70,7 +70,14 @@ executable Anagrams
     -- other-extensions:
 
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.17.2.1, containers, text
+    build-depends:    base ^>=4.17.2.1,
+                      containers,
+                      text,
+                      brick,
+                      vty,
+                      vty-crossplatform,
+                      random,
+                      time
 
     -- Directories containing source files.
     hs-source-dirs:   app

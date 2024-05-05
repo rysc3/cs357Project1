@@ -1,9 +1,9 @@
 module Score (
   getScoringData,  -- Public methods main can see
+  getWordScore,
   getLetterScore
 ) where 
 
-import System.IO
 import Data.Char (toUpper)  -- for getScores method
 
 type Score = (Char, Int)
@@ -36,7 +36,7 @@ readScoresFromFile filePath = do
   C 3
   ...
 -}
-getScoringData :: FilePath -> IO [Score]
+getScoringData :: String -> IO [Score]
 getScoringData filePath = do 
   scores <- readScoresFromFile filePath
   return $ map (\(char, score) -> (toUpper char, score)) scores   -- convert all letters to uppercase
@@ -52,5 +52,35 @@ getScoringData filePath = do
 getLetterScore :: Char -> [Score] -> Int
 getLetterScore _ [] = 0
 getLetterScore x ((char, score):rest) 
-  | x == char = score
+  | toUpper x == char = score
   | otherwise = getLetterScore x rest
+
+{-
+  Calculates the score of a given word by calculating the score of each letter, and also adding on a letter count multiplier
+
+  There is no multiplier for < 3 letter words. 
+  on the range [3,7] we have a multiplier of 7x where the x is the number of leters in the word
+  So if you have a word 
+  `aaa` = 3 pts 
+  `aaaa` = 3 * 1 + 1*7 = 10 pts   -- 4th letter multiplied
+  `aaaaa` = 3 * 1 + 2*7 = 17 pts  -- 4th and 5th letter multiplied
+  ...
+
+  getWordScore is the main method. It passes the word first into calc3, which will calculate the score values 
+  of the first 3 letters as they are defined in the scoring file. If there are any letters after the first 3, 
+  it passes these into calcBonus, which does the same as calc3 but multiples the score by 7 for our length 
+  bonus at the end. getWordScore sums these at the end.
+-}
+getWordScore :: [Char] -> [Score] -> Int
+getWordScore word scores = calc3 word scores + calcBonus word scores
+  where 
+
+    calc3 word scores = sumLetterScores (take 3 word) scores
+      where
+        sumLetterScores [] _ = 0
+        sumLetterScores (x:xs) scores = getLetterScore x scores + sumLetterScores xs scores
+
+    calcBonus word scores = 7 * sumLetterScores (drop 3 word) scores
+      where
+        sumLetterScores [] _ = 0
+        sumLetterScores (x:xs) scores = getLetterScore x scores + sumLetterScores xs scores
