@@ -3,7 +3,6 @@ module Score (
   getWordScore,
   getLetterScore
 ) where 
-  
 
 import Data.Char (toUpper)  -- for getScores method
 

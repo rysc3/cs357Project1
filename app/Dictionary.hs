@@ -5,8 +5,10 @@ module Dictionary(
   getListOfStrings
 ) where
 
-import qualified Data.Map.Strict as M
+import qualified Data.Map.Strict as M --need a map because we don't know how many children each node is going to have
 import Data.Text (pack, splitOn, unpack, toUpper)
+import qualified Data.Text.IO as TIO
+import qualified Data.Text as T
 
 data Trie = Node
   { endOfWord :: Bool,
@@ -46,12 +48,16 @@ contains :: String -> Trie -> Bool
 contains [] trie = endOfWord trie
 contains (x : xs) trie = maybe False (contains xs) (M.lookup x (children trie))
 
-buildDictionary :: [String] -> Trie
-buildDictionary s = foldr insert emptyTrie s
+buildDictionary :: FilePath -> IO Trie
+buildDictionary filePath = do
+    contents <- readFileText filePath
+    let wordList = getListOfStrings contents
+    return $ foldr insert emptyTrie wordList
 
-{-
-  Dictionary file is read in in the format "word\r\nword\r\nword\r\n", this function 
-  converts into a list of the actual words.
--}
-getListOfStrings :: String -> [String]
-getListOfStrings s = map unpack (splitOn (pack "\r\n") (pack s))
+getListOfStrings :: T.Text -> [String]
+getListOfStrings s = map T.unpack (T.splitOn charsToText s)
+  where 
+    charsToText = T.pack "\r\n"   -- these need to be Text
+
+readFileText :: FilePath -> IO T.Text
+readFileText filePath = TIO.readFile filePath

@@ -1,234 +1,147 @@
 module Main where
 
 -- Internal imports
+import Dictionary(Trie, buildDictionary, contains)
+import Score (getScoringData, getWordScore)
+
 
 -- External imports
 import Control.Monad (when)
--- things for leaderboard --
-
-import Dictionary(Trie, buildDictionary, contains, getListOfStrings)
-import Data.Function (on)
-import Data.List (insertBy, sortBy)
 import Data.Time.Clock
 import Data.Time.Format
-import Dictionary (buildDictionary, contains, getListOfStrings)
-import Score (getScoringData, getWordScore)
+import Data.Char (isAlpha)
+
+
+-- Brick things --
+import qualified Graphics.Vty as V
+import qualified Brick as BR
+import qualified Brick.Widgets.Border as B
+import qualified Brick.Widgets.Center as C
+import qualified Brick.Widgets.Border.Style as BS
+-- import Brick.Main as BR (App(..), defaultMain, neverShowCursor)
+-- import Brick.Types as BR (Widget, BrickEvent(..), EventM, get, put)
+-- import Brick.Widgets.Core as BR (str, withAttr, (<+>), vBox, hBox)
+import Brick.Widgets.Border as BR (border)
+import GHC.Base (build)
+import Control.Monad.IO.Class (liftIO)
 import System.Exit (exitSuccess)
-import System.IO
-import System.Random (mkStdGen, randomRs)
-import Tests (runAllTests)
-import Data.Maybe (mapMaybe, catMaybes)
-import Control.Monad (forM)
+-- import Brick.AttrMap as BR (AttrMap, attrMap, AttrName, attrName)
 
-
-main :: IO ()
 main = do
-  preGameLoop
+  initialState <- initialize
+  BR.defaultMain app initialState
+
+data State = State
+  { dictionary :: Trie,
+    scoring :: [(Char, Int)],
+    playedLetters :: String,
+    availLetters :: String
+  }
 
 {-
-      -- BEGIN INITIALIZE LOGIC --
--}
-preGameLoop :: IO ()
-preGameLoop = do
-  putStrLn "------------------"
-  putStrLn "Select an option:"
-  putStrLn "1 - Play"
-  putStrLn "2 - Leaderboard"
-  putStrLn "3 - Settings"
-  putStrLn "4 - Back/Quit"
-  putStrLn "\n---"
-  input <- getLine
-  putStrLn "---"
-  case input of
-    "1" -> startGame
-    "2" -> showLeaderboard
-    "3" -> showSettings
-    "4" -> quitGame
-    _ -> do
-      putStrLn "Invalid option. Please select again."
-      preGameLoop
+  - Dictionary seems to be working
+  - Scoring seems to be working 
 
-initialize :: IO (Trie, [(Char, Int)], FilePath)
+  - still need to figure out tracking played letters 
+  - Still need to generate random letters to start **
+  -- Need AI for that part
+-}
+initialize :: IO State
 initialize = do
-  let dictionaryInputFile = "Dictionaries/01-Dictionary.txt"
-      scoreInputFile = "Dictionaries/01-Scoring.txt"
-      leaderboardFile = "Dictionaries/Leaderboard.csv"
-      dictionaryInput = loadDictionary dictionaryInputFile
-  dictionary <- buildDictionary <$> dictionaryInput
-  scoring <- getScoringData scoreInputFile
-  return (dictionary, scoring, leaderboardFile)
-  where
-    loadDictionary :: FilePath -> IO [String]
-    loadDictionary dictionaryInputFile = do
-      contents <- readFile dictionaryInputFile
-      return (lines contents)
+  dictionary <- buildDictionary "Dictionaries/01-Dictionary.txt"
+  scores <- getScoringData "Dictionaries/01-Scoring.txt"
+  -- Test some example words
+  let exampleWords = ["hello", "world", "example"]
+  mapM_ (\word -> testGetWordScore scores word) exampleWords
+  let playedLetters = "" -- TODO: figure this out
+      availLetters = "AJZIKLQ" -- TODO: generate random letters on start
+  return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
 
-{-
-      -- END INITIALIZE LOGIC --
--}
+testGetWordScore :: [(Char, Int)] -> String -> IO ()
+testGetWordScore scores word = do
+  putStrLn $ " -- " ++ word ++ " --"
+  putStrLn $ show $ getWordScore word scores
 
 
+removeLetter :: Char -> [Char] -> [Char]
+removeLetter c avail = filter (/= c) avail
 
-{-
-      -- START GAME STATES --
--}
-startGame :: IO ()
-startGame = do
-  putStrLn "------------------"
-  putStrLn "Starting the game..."
-  (dictionary, scoring, _) <- initialize
-  putStrLn "How many letters would you like to play with?"
-  putStrLn "\n---"
-  numLetters <- getNumberInput
-  putStrLn "---"
-  randomLetters <- generateRandomLetters numLetters
-  putStrLn $ "Randomly selected letters: " ++ show randomLetters
-  -- TODO @ryan figure out the spacing here
-  -- putStrLn "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-  -- putStrLn "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-  -- putStrLn "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
-  gameLoop dictionary scoring randomLetters 0 []
+getLastLetter :: [Char] -> Char
+getLastLetter [] = ' '
+getLastLetter (x : xs) = if null xs then x else getLastLetter xs
 
-getNumberInput :: IO Int
-getNumberInput = do
-  input <- getLine
-  let numLetters = read input :: Int
-  if numLetters < 1 || numLetters > 7
+addLetter :: Char -> [Char] -> [Char]
+addLetter c xs = xs ++ [c]
+
+addLetters :: String -> [Char] -> [Char]
+addLetters [] avail = avail
+addLetters (c : cs) avail = addLetters cs (removeLetter c avail)
+
+drawavailLetters :: [Char] -> BR.Widget ()
+drawavailLetters avail = BR.str $ "Your Letters: " ++ avail
+
+drawPlayedLetters :: [Char] -> BR.Widget ()
+drawPlayedLetters played = BR.str $ "Current Play: " ++ played
+
+drawScore :: Int -> BR.Widget ()
+drawScore score = BR.str $ "Total Score: " ++ show score
+
+drawUI :: State -> BR.Widget ()
+drawUI s =
+    let label = BR.withAttr (BR.attrName "label") . BR.str
+        -- redBackgroundAttr = BR.withAttr (BR.attrName "redBackground") . BR.str -- I can't figure out how to set a background color
+        borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Word Game")
+        content = BR.vBox
+            [ BR.str "Welcome to Word Game!"
+            , BR.str "" -- Spacer
+            , BR.hBox [drawPlayedLetters (playedLetters s), BR.str ""] -- Horizontal layout for middle section
+            , BR.hBox [drawavailLetters (availLetters s), drawScore (getWordScore (playedLetters s) (scoring s))] -- Horizontal layout for bottom section
+            ]
+        borderedContent = borderLabel content
+        -- Widget with yellow background and borders all around
+        finalWidget = BR.withAttr (BR.attrName "redBackground") borderedContent
+    in
+        C.center finalWidget
+
+
+defaultColor :: V.Color
+defaultColor = V.black
+
+
+handleEvent :: BR.BrickEvent () () -> BR.EventM () State ()
+handleEvent (BR.VtyEvent (V.EvKey V.KEnter _)) = do
+  s <- BR.get
+  let word = playedLetters s
+  if contains word (dictionary s)
     then do
-      putStrLn "Invalid number of letters. Please enter a number between 1 and 7."
-      getNumberInput -- Retry input
-    else return numLetters
-
-generateRandomLetters :: Int -> IO String
-generateRandomLetters numLetters = do
-  let randomLetters = take numLetters (randomRs ('A', 'Z') (mkStdGen 42))
-  return randomLetters
-
-showLeaderboard :: IO ()
-showLeaderboard = do
-  putStrLn "Showing the leaderboard..."
-  (_, _, leaderboardFile) <- initialize
-  contents <- readFile leaderboardFile
-  parsedEntries <- forM (lines contents) parseEntry
-  let numLines = length $ lines contents
-  let validEntries = catMaybes parsedEntries
-      sortedEntries = sortLeaderboard validEntries
-      numEntries = length sortedEntries
-      maxEntriesToShow = min 10 numEntries
-      topEntries = take maxEntriesToShow sortedEntries
-  mapM_ putStrLn (map formatEntry topEntries)
-  preGameLoop
-
-showSettings :: IO ()
-showSettings = do
-  putStrLn "At some point, I'll put some settings here"
-  putStrLn "1 - Back"
-  input <- getLine
-  case input of
-    "1" -> preGameLoop
-    _ -> do
-      putStrLn "Invalid option. Please select again."
-      showSettings
-
-quitGame :: IO ()
-quitGame = do
-  putStrLn "Quitting the game..."
-  exitSuccess
-
-saveQuitGame :: Int -> IO ()
-saveQuitGame totalScore = do
-  putStrLn "------------------"
-  putStrLn "Quitting the game..."
-  putStrLn "Please enter your name:"
-  putStrLn "---"
-  name <- getLine
-  putStrLn "---"
-  currentTime <- getCurrentTime
-  let formattedDate = formatTime defaultTimeLocale "%-m/%-d" currentTime
-  putStrLn "------------------"
-  putStrLn $ "Today's date: " ++ formattedDate
-  addToLeaderboard totalScore name
-  putStrLn "Saving to leaderboard"
-  putStrLn "------------------"
-  preGameLoop -- go back to title screen
-
-{-
-      -- END GAME STATES --
--}
+      let score = getWordScore word (scoring s)
+      liftIO $ putStrLn $ word ++ " is in trie | " ++ " score: " ++ show score
+      BR.put $ s {playedLetters = "", availLetters = addLetters word (availLetters s)}
+      return ()
+    else do
+      BR.put $ s {playedLetters = "", availLetters = (availLetters s) ++ (playedLetters s)}
+      return ()
+handleEvent (BR.VtyEvent (V.EvKey (V.KChar c) _)) = do
+  s <- BR.get
+  BR.put $ s {playedLetters = addLetter c (playedLetters s), availLetters = removeLetter c (availLetters s)}
+  return ()
+handleEvent (BR.VtyEvent (V.EvKey (V.KChar back) _)) = do
+  s <- BR.get
+  let lastLetter = getLastLetter (playedLetters s)
+  BR.put $ s {playedLetters = filter (/= lastLetter) (playedLetters s), availLetters = (availLetters s) ++ [lastLetter]}
+  return ()
+handleEvent (BR.VtyEvent (V.EvKey V.KEsc _)) = do 
+  liftIO $ putStrLn "Quitting Game"
+  liftIO exitSuccess
 
 
 
-{-
-      -- START LEADERBOARD LOGIC --
--}
-addToLeaderboard :: Int -> String -> IO ()
-addToLeaderboard score name = do
-  currentTime <- getCurrentTime
-  let date = formatTime defaultTimeLocale "%m/%d" currentTime
-      newEntry = (score, date, name)
-  withFile "Dictionaries/Leaderboard.csv" AppendMode $ \handle -> do
-    hPutStrLn handle (formatEntry newEntry)
-
-sortLeaderboard :: [(Int, String, String)] -> [(Int, String, String)]
-sortLeaderboard = sortBy (flip compare `on` (\(score, _, _) -> score))
-
-{-
-  Logic to parse leaderboard and sort. 
-
-  Everything is saved in Dictionaries/Leaderboard.csv, but it's actually pretty difficult to parse that data. it's easy to parse the beginning portion but then
-  When you get to the last value of the list it was having issues with the null case, when you try to read line n+1 of the file. 
-
-  I had to make a helper function, wordsWhen, that splits and skips once we get to this point so we don't just hit a terminal error, then it just returns 
-  back to parseEntry which sorts and prints everyting.
--}
-parseEntry :: String -> IO (Maybe (Int, String, String))
-parseEntry entry
-  | null entry = return Nothing  -- Skip empty lines
-  | otherwise = do
-      let parts = wordsWhen (== ',') entry
-      case parts of
-        [scoreStr, date, name] -> return $ Just (read scoreStr, date, name)
-        _ -> do
-          return Nothing
-
-wordsWhen :: (Char -> Bool) -> String -> [String]
-wordsWhen p s = case dropWhile p s of
-                      "" -> []
-                      s' -> w : wordsWhen p s''
-                            where (w, s'') = break p s'
-
-
--- debugParseEntry :: String -> IO (Int, String, String)
--- debugParseEntry entry = do
---     putStrLn $ "Parsing entry: " ++ entry
---     return $ parseEntry entry
-
-formatEntry :: (Int, String, String) -> String
-formatEntry (score, date, name) = show score ++ ", " ++ date ++ ", " ++ name
-
-{-
-      -- END LEADERBOARD LOGIC --
--}
-
-
-
-{-
-      -- START MAIN GAME LOOP --
--}
-gameLoop :: Trie -> [(Char, Int)] -> String -> Int -> [(String, Int)] -> IO ()
-gameLoop dictionary scoring randomLetters totalScore wordScores = do
-  word <- getLine
-  if (not (contains word dictionary)) 
-    then do
-      putStrLn "Invalid word. Please try again."
-      gameLoop dictionary scoring randomLetters totalScore wordScores
-  else do
-    let score = getWordScore word scoring
-        newTotalScore = totalScore + score
-        letterFormat = unwords $ map (\c -> [c] ++ replicate 5 ' ') randomLetters
-    mapM_ (\(w, s) -> putStrLn $ w ++ replicate (10 - length w) '.' ++ replicate (6 - length (show s)) ' ' ++ show s) (reverse wordScores)
-    putStrLn $ replicate 23 '-'
-    putStrLn $ letterFormat ++ " => " ++ show newTotalScore
-    if null word
-      then saveQuitGame newTotalScore
-      else gameLoop dictionary scoring randomLetters newTotalScore ((word, score) : wordScores)
+app :: BR.App State () ()
+app =
+  BR.App
+    { BR.appDraw = \s -> [drawUI s],
+      BR.appChooseCursor = BR.neverShowCursor,
+      BR.appHandleEvent = handleEvent,
+      BR.appStartEvent = return (),
+      BR.appAttrMap = const $ BR.attrMap V.defAttr [] -- I don't really know what this actually does but it makes things work lol
+    }
