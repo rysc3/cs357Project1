@@ -1,114 +1,118 @@
 module Main where
 
 -- Internal imports
+import Dictionary(Trie, buildDictionary, contains)
+import Score (getScoringData, getWordScore)
+
 
 -- External imports
 import Control.Monad (when)
--- things for leaderboard --
-
-import Dictionary(Trie, buildDictionary, contains, getListOfStrings)
 import Data.Time.Clock
 import Data.Time.Format
-import Score (getScoringData, getWordScore)
-
-import Brick.Main (App(..), defaultMain, neverShowCursor, resizeOrQuit)
-import Brick.Types (Widget, BrickEvent(..), EventM, get, put)
-import Brick.Widgets.Core (str, withAttr, (<+>), vBox)
-import Brick.Widgets.Table (table, renderTable)
-import Brick.Widgets.Border (border)
-import Brick.AttrMap (AttrMap, attrMap, AttrName, attrName)
-import Brick.Util (fg)
-
-import qualified Graphics.Vty as V
-
 import Data.Char (isAlpha)
 
 
-
+-- Brick things --
+import qualified Graphics.Vty as V
+import qualified Brick as BR
+import qualified Brick.Widgets.Border as B
+import qualified Brick.Widgets.Center as C
+import qualified Brick.Widgets.Border.Style as BS
+-- import Brick.Main as BR (App(..), defaultMain, neverShowCursor)
+-- import Brick.Types as BR (Widget, BrickEvent(..), EventM, get, put)
+-- import Brick.Widgets.Core as BR (str, withAttr, (<+>), vBox, hBox)
+import Brick.Widgets.Border as BR (border)
+-- import Brick.AttrMap as BR (AttrMap, attrMap, AttrName, attrName)
 
 main = do
   initialState <- initialize
-  defaultMain app initialState
+  BR.defaultMain app initialState
 
-data State = State 
+data State = State
   { dictionary :: Trie,
     scoring :: [(Char, Int)],
     playedLetters :: String,
-    availLetters:: String
+    availLetters :: String
   }
 
--- initialize :: IO State
--- initialize = do
---   scores <- getScoringData "Dictionaries/01-Scoring.txt"
---   let scoring = map (\score -> (fst score, snd score)) scores
---   contents <- readFile "Dictionaries/01-Dictionary.txt"
---   let dictionary = buildDictionary (lines contents)
---   return State dictionary scoring "" "ABCDEF"
-
-initialize :: IO State 
-initialize = do 
+initialize :: IO State
+initialize = do
   let dictionary = buildDictionary ["hello", "world", "this", "is", "a", "test"]
   scores <- getScoringData "Dictionaries/01-Scoring.txt"
   let playedLetters = ""
   let availLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
 
-
---removes letter from list of available letters
-removeLetter :: Char -> [Char] -> [Char] 
+removeLetter :: Char -> [Char] -> [Char]
 removeLetter c avail = filter (/= c) avail
 
 getLastLetter :: [Char] -> Char
 getLastLetter [] = ' '
-getLastLetter (x:xs) = if null xs then x else getLastLetter xs
+getLastLetter (x : xs) = if null xs then x else getLastLetter xs
 
---takes letter to be played, adds it to end of list of played letters 
 addLetter :: Char -> [Char] -> [Char]
 addLetter c xs = xs ++ [c]
 
 addLetters :: String -> [Char] -> [Char]
 addLetters [] avail = avail
-addLetters (c:cs) avail = addLetters cs (removeLetter c avail)
+addLetters (c : cs) avail = addLetters cs (removeLetter c avail)
 
-drawavailLetters :: [Char] -> Widget ()
-drawavailLetters avail = str $ "Your Letters: " ++ avail
+drawavailLetters :: [Char] -> BR.Widget ()
+drawavailLetters avail = BR.str $ "Your Letters: " ++ avail
 
-drawPlayedLetters :: [Char] -> Widget ()
-drawPlayedLetters played = str $ "Current Play: " ++ played
+drawPlayedLetters :: [Char] -> BR.Widget ()
+drawPlayedLetters played = BR.str $ "Current Play: " ++ played
 
-drawScore :: Int -> Widget ()
-drawScore score = str $ "Total Score: " ++ show score
+drawScore :: Int -> BR.Widget ()
+drawScore score = BR.str $ "Total Score: " ++ show score
 
-drawUI :: State -> [Widget ()]
-drawUI s = [drawavailLetters (availLetters s), 
-            drawPlayedLetters (playedLetters s),
-            drawScore (getWordScore (playedLetters s) (scoring s))]
+drawUI :: State -> BR.Widget ()
+drawUI s =
+    let label = BR.withAttr (BR.attrName "label") . BR.str
+        redBackgroundAttr = BR.withAttr (BR.attrName "redBackground") . BR.str
+        borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Word Game")
+        content = BR.vBox
+            [ BR.str "Welcome to Word Game!"
+            , BR.str "" -- Spacer
+            , BR.hBox [drawPlayedLetters (playedLetters s), BR.str ""] -- Horizontal layout for middle section
+            , BR.hBox [drawavailLetters (availLetters s), drawScore (getWordScore (playedLetters s) (scoring s))] -- Horizontal layout for bottom section
+            ]
+        borderedContent = borderLabel content
+        -- Widget with yellow background and borders all around
+        finalWidget = BR.withAttr (BR.attrName "redBackground") borderedContent
+    in
+        C.center finalWidget
 
-handleEvent :: BrickEvent () () -> EventM () State ()
-handleEvent (VtyEvent (V.EvKey V.KEnter _)) = do
-  s <- get
+defaultColor :: V.Color
+defaultColor = V.black
+
+handleEvent :: BR.BrickEvent () () -> BR.EventM () State ()
+handleEvent (BR.VtyEvent (V.EvKey V.KEnter _)) = do
+  s <- BR.get
   let word = playedLetters s
   if contains word (dictionary s)
     then do
       let score = getWordScore word (scoring s)
-      put $ s {playedLetters = "", availLetters = addLetters word (availLetters s)}
+      BR.put $ s {playedLetters = "", availLetters = addLetters word (availLetters s)}
       return ()
     else return ()
-handleEvent (VtyEvent (V.EvKey (V.KChar c) _)) = do
-  s <- get
-  put $ s {playedLetters = addLetter c (playedLetters s), availLetters = removeLetter c (availLetters s)}
+handleEvent (BR.VtyEvent (V.EvKey (V.KChar c) _)) = do
+  s <- BR.get
+  BR.put $ s {playedLetters = addLetter c (playedLetters s), availLetters = removeLetter c (availLetters s)}
   return ()
-handleEvent (VtyEvent (V.EvKey (V.KChar back) _)) = do
-  s <- get
+handleEvent (BR.VtyEvent (V.EvKey (V.KChar back) _)) = do
+  s <- BR.get
   let lastLetter = getLastLetter (playedLetters s)
-  put $ s {playedLetters = filter (/= lastLetter) (playedLetters s), availLetters = (availLetters s) ++ [lastLetter]}
+  BR.put $ s {playedLetters = filter (/= lastLetter) (playedLetters s), availLetters = (availLetters s) ++ [lastLetter]}
   return ()
 
-app :: App State () ()
-app = App
-    { appDraw         = drawUI
-    , appChooseCursor = neverShowCursor
-    , appHandleEvent  = handleEvent
-    , appStartEvent   = return ()
-    , appAttrMap      = const $ attrMap V.defAttr [] -- I don't really know what this actually does but it makes things work lol
+
+app :: BR.App State () ()
+app =
+  BR.App
+    { BR.appDraw = \s -> [drawUI s],
+      BR.appChooseCursor = BR.neverShowCursor,
+      BR.appHandleEvent = handleEvent,
+      BR.appStartEvent = return (),
+      BR.appAttrMap = const $ BR.attrMap V.defAttr [] -- I don't really know what this actually does but it makes things work lol
     }
