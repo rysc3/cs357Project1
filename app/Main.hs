@@ -22,6 +22,7 @@ import qualified Brick.Widgets.Border.Style as BS
 -- import Brick.Types as BR (Widget, BrickEvent(..), EventM, get, put)
 -- import Brick.Widgets.Core as BR (str, withAttr, (<+>), vBox, hBox)
 import Brick.Widgets.Border as BR (border)
+import GHC.Base (build)
 -- import Brick.AttrMap as BR (AttrMap, attrMap, AttrName, attrName)
 
 main = do
@@ -35,12 +36,20 @@ data State = State
     availLetters :: String
   }
 
+{-
+  - Dictionary seems to be working
+  - Scoring seems to be working 
+
+  - still need to figure out tracking played letters 
+  - Still need to generate random letters to start **
+  -- Need AI for that part
+-}
 initialize :: IO State
 initialize = do
-  let dictionary = buildDictionary ["hello", "world", "this", "is", "a", "test"]
+  dictionary <- buildDictionary "Dictionaries/01-Dictionary.txt"
   scores <- getScoringData "Dictionaries/01-Scoring.txt"
-  let playedLetters = ""
-  let availLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  let playedLetters = "" -- TODO we have to figure this out somehow
+  let availLetters = "AJZIKLQ" -- TODO generate random letters on start
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
 
 removeLetter :: Char -> [Char] -> [Char]
@@ -69,7 +78,7 @@ drawScore score = BR.str $ "Total Score: " ++ show score
 drawUI :: State -> BR.Widget ()
 drawUI s =
     let label = BR.withAttr (BR.attrName "label") . BR.str
-        redBackgroundAttr = BR.withAttr (BR.attrName "redBackground") . BR.str
+        -- redBackgroundAttr = BR.withAttr (BR.attrName "redBackground") . BR.str -- I can't figure out how to set a background color
         borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Word Game")
         content = BR.vBox
             [ BR.str "Welcome to Word Game!"
@@ -83,8 +92,10 @@ drawUI s =
     in
         C.center finalWidget
 
+
 defaultColor :: V.Color
 defaultColor = V.black
+
 
 handleEvent :: BR.BrickEvent () () -> BR.EventM () State ()
 handleEvent (BR.VtyEvent (V.EvKey V.KEnter _)) = do
