@@ -6,7 +6,9 @@ module Dictionary(
 ) where
 
 import qualified Data.Map.Strict as M --need a map because we don't know how many children each node is going to have
-import Data.Text (pack, unpack, splitOn) 
+import Data.Text (pack, unpack, splitOn)
+import qualified Data.Text.IO as TIO
+import qualified Data.Text as T
 
 -- maisy was here
 
@@ -43,9 +45,16 @@ contains :: String -> Trie -> Bool
 contains [] trie = endOfWord trie
 contains (x:xs) trie = maybe False (contains xs) (M.lookup x (children trie)) --need to handle for nothing or Just cases when called 
 
-buildDictionary :: [String] -> Trie
-buildDictionary s = foldr insert emptyTrie s
---string will have all words in dictionary, which we will split into a list of strings, then insert each string into the trie
+buildDictionary :: FilePath -> IO Trie
+buildDictionary filePath = do
+    contents <- readFileText filePath
+    let wordList = getListOfStrings contents
+    return $ foldr insert emptyTrie wordList
 
-getListOfStrings :: String -> [String]
-getListOfStrings s = map unpack (splitOn (pack "\r\n") (pack s)) --convert string to text, split on \r\n, convert back to string
+getListOfStrings :: T.Text -> [String]
+getListOfStrings s = map T.unpack (T.splitOn charsToText s)
+  where 
+    charsToText = T.pack "\r\n"   -- these need to be Text
+
+readFileText :: FilePath -> IO T.Text
+readFileText filePath = TIO.readFile filePath
