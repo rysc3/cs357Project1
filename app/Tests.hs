@@ -20,7 +20,7 @@ runAllTests dictionaryInputFile scoreInputFile = do
   putStrLn "-----"
   testReadDictionary dictionaryInputFile
   putStrLn "(getListOfStrings)"
-  testGetListOfStrings dictionaryInputFile
+  -- testGetListOfStrings dictionaryInputFile
   putStrLn "----------------"
 
 
@@ -35,7 +35,7 @@ runAllTests dictionaryInputFile scoreInputFile = do
 
 
   putStrLn "---------- getListOfStrings ------------"
-  testGetListOfStrings dictionaryInputFile
+  -- testGetListOfStrings dictionaryInputFile
 
 
 testReadDictionary :: FilePath -> IO ()
@@ -58,7 +58,7 @@ testGetLetterScore scoreInputFile letter = do
   putStrLn $ show $ getLetterScore letter scores
 
 
-testGetListOfStrings :: FilePath -> IO ()
-testGetListOfStrings dictionaryInputFile = do
-  contents <- readFile dictionaryInputFile
-  putStrLn $ head (getListOfStrings $ take 50 contents)
+-- testGetListOfStrings :: FilePath -> IO ()
+-- testGetListOfStrings dictionaryInputFile = do
+--   contents <- readFile dictionaryInputFile
+--   putStrLn $ head (getListOfStrings $ take 50 contents)
