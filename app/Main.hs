@@ -23,6 +23,8 @@ import qualified Brick.Widgets.Border.Style as BS
 -- import Brick.Widgets.Core as BR (str, withAttr, (<+>), vBox, hBox)
 import Brick.Widgets.Border as BR (border)
 import GHC.Base (build)
+import Control.Monad.IO.Class (liftIO)
+import System.Exit (exitSuccess)
 -- import Brick.AttrMap as BR (AttrMap, attrMap, AttrName, attrName)
 
 main = do
@@ -106,7 +108,9 @@ handleEvent (BR.VtyEvent (V.EvKey V.KEnter _)) = do
       let score = getWordScore word (scoring s)
       BR.put $ s {playedLetters = "", availLetters = addLetters word (availLetters s)}
       return ()
-    else return ()
+    else do
+      BR.put $ s {playedLetters = "", availLetters = (availLetters s) ++ (playedLetters s)}
+      return ()
 handleEvent (BR.VtyEvent (V.EvKey (V.KChar c) _)) = do
   s <- BR.get
   BR.put $ s {playedLetters = addLetter c (playedLetters s), availLetters = removeLetter c (availLetters s)}
@@ -116,6 +120,10 @@ handleEvent (BR.VtyEvent (V.EvKey (V.KChar back) _)) = do
   let lastLetter = getLastLetter (playedLetters s)
   BR.put $ s {playedLetters = filter (/= lastLetter) (playedLetters s), availLetters = (availLetters s) ++ [lastLetter]}
   return ()
+handleEvent (BR.VtyEvent (V.EvKey V.KEsc _)) = do 
+  liftIO $ putStrLn "Quitting Game"
+  liftIO exitSuccess
+
 
 
 app :: BR.App State () ()
