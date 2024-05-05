@@ -50,9 +50,18 @@ initialize :: IO State
 initialize = do
   dictionary <- buildDictionary "Dictionaries/01-Dictionary.txt"
   scores <- getScoringData "Dictionaries/01-Scoring.txt"
-  let playedLetters = "" -- TODO we have to figure this out somehow
-  let availLetters = "AJZIKLQ" -- TODO generate random letters on start
+  -- Test some example words
+  let exampleWords = ["hello", "world", "example"]
+  mapM_ (\word -> testGetWordScore scores word) exampleWords
+  let playedLetters = "" -- TODO: figure this out
+      availLetters = "AJZIKLQ" -- TODO: generate random letters on start
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
+
+testGetWordScore :: [(Char, Int)] -> String -> IO ()
+testGetWordScore scores word = do
+  putStrLn $ " -- " ++ word ++ " --"
+  putStrLn $ show $ getWordScore word scores
+
 
 removeLetter :: Char -> [Char] -> [Char]
 removeLetter c avail = filter (/= c) avail
@@ -106,6 +115,7 @@ handleEvent (BR.VtyEvent (V.EvKey V.KEnter _)) = do
   if contains word (dictionary s)
     then do
       let score = getWordScore word (scoring s)
+      liftIO $ putStrLn $ word ++ " is in trie | " ++ " score: " ++ show score
       BR.put $ s {playedLetters = "", availLetters = addLetters word (availLetters s)}
       return ()
     else do
