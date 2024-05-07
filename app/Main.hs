@@ -11,6 +11,10 @@ import Data.Time.Clock
 import Data.Time.Format
 import Data.Char (isAlpha)
 
+import System.Random
+import Data.Char (chr)
+import Foreign.Marshal.Unsafe
+
 
 -- Brick things --
 import qualified Graphics.Vty as V
@@ -54,7 +58,7 @@ initialize = do
   let exampleWords = ["hello", "world", "example"]
   mapM_ (\word -> testGetWordScore scores word) exampleWords
   let playedLetters = "" -- TODO: figure this out
-      availLetters = "AJZIKLQ" -- TODO: generate random letters on start
+      availLetters = unsafeLocalState (getLetterSet 5 "ae") -- TODO: generate random letters on start
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
 
 testGetWordScore :: [(Char, Int)] -> String -> IO ()
@@ -62,6 +66,17 @@ testGetWordScore scores word = do
   putStrLn $ " -- " ++ word ++ " --"
   putStrLn $ show $ getWordScore word scores
 
+-- generate list of random letters
+randomChar :: IO Char
+randomChar = fmap chr (randomRIO (97, 122))
+
+getSet :: Int -> IO [Char]
+getSet n = sequence $ replicate n randomChar
+
+getLetterSet :: Int -> [Char] -> IO [Char]
+getLetterSet n ls = fmap (++ ls) (getSet n)
+-- for 7 random letters use :  getLetterSet 7 []
+-- for set always w "ae" use:  getLetterSet 5 "ae"
 
 removeLetter :: Char -> [Char] -> [Char]
 removeLetter c avail = filter (/= c) avail
@@ -84,7 +99,7 @@ drawPlayedLetters :: [Char] -> BR.Widget ()
 drawPlayedLetters played = BR.str $ "Current Play: " ++ played
 
 drawScore :: Int -> BR.Widget ()
-drawScore score = BR.str $ "Total Score: " ++ show score
+drawScore score = BR.str $ " Total Score: " ++ show score
 
 drawUI :: State -> BR.Widget ()
 drawUI s =
