@@ -9,7 +9,7 @@ import Score (getScoringData, getWordScore)
 import Control.Monad (when)
 import Data.Time.Clock
 import Data.Time.Format
-import Data.Char (isAlpha)
+import Data.Char (isAlpha, toUpper)
 import System.Random (randomRIO)
 
 -- Brick things --
