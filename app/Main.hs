@@ -192,7 +192,7 @@ addLetters (c : cs) avail = addLetters cs (removeLetter c avail)
 defaultColor :: V.Color
 defaultColor = V.black
 
-type TableCell = BR.Widget ()
+
 
 -- Function to draw available letters in a table
 drawavailLetters :: [Char] -> Widget ()
@@ -306,6 +306,8 @@ handleEvent (BR.VtyEvent (V.EvKey V.KEsc _)) = do
     let finalWidget = BR.vBox [scoreWidget, endGameWidget]
     liftIO $ BR.simpleMain finalWidget
     liftIO exitSuccess
+handleEvent _ = do
+  return ()
 
 
 app :: BR.App State () ()
