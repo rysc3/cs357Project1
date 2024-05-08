@@ -10,6 +10,7 @@ module Dictionary(
 
 import qualified Data.Map.Strict as M --need a map because we don't know how many children each node is going to have
 import Data.Text (pack, unpack, splitOn)
+import Data.Char (toUpper)
 import qualified Data.Text.IO as TIO
 import qualified Data.Text as T
 
@@ -39,14 +40,14 @@ emptyTrie = Node False M.empty
 insert :: String -> Trie -> Trie
 insert []     trie = trie { endOfWord = True }
 insert (x:xs) trie =
-    let childNode = M.lookup x (children trie)
-        newNode = insert xs (maybe emptyTrie id childNode)
-        updatedChildren = M.insert x newNode (children trie)
+    let childNode = M.lookup (toUpper x) (children trie)
+        newNode = insert (map toUpper xs) (maybe emptyTrie id childNode)
+        updatedChildren = M.insert (toUpper x) newNode (children trie)
     in trie { children = updatedChildren }
 
 contains :: String -> Trie -> Bool
 contains [] trie = endOfWord trie
-contains (x:xs) trie = maybe False (contains xs) (M.lookup x (children trie)) --need to handle for nothing or Just cases when called 
+contains (x:xs) trie = maybe False (contains (map toUpper xs)) (M.lookup (toUpper x) (children trie)) --need to handle for nothing or Just cases when called 
 
 buildDictionary :: FilePath -> IO Trie
 buildDictionary filePath = do
@@ -86,13 +87,13 @@ printTrie' prefix (Node endOfWord children) = do
 
 
 shrinkTrie :: [Char] -> Trie -> Trie
-shrinkTrie letters trie = limitDupes letters $ chopDepth (pruneBadBranch trie letters)
+shrinkTrie letters trie = limitDupes (map toUpper letters) $ chopDepth (pruneBadBranch trie letters)
 
 pruneBadBranch :: Trie -> [Char] -> Trie
 pruneBadBranch trie chars = trie { children = prunedChildren }
   where
-    prunedChildren = M.map (\child -> pruneBadBranch child chars) 
-        $ M.filterWithKey (\k _ -> k `elem` chars) (children trie)
+    prunedChildren = M.map (\child -> pruneBadBranch child (map toUpper chars)) 
+        $ M.filterWithKey (\k _ -> k `elem` (map toUpper chars)) (children trie)
 
 chopDepth :: Trie -> Trie
 chopDepth trie = chopOffAtDepth' trie 0

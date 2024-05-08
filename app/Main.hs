@@ -98,6 +98,7 @@ generateLetters :: Trie -> IO String
 generateLetters dict = do 
   putStrLn "----------------"
   randomLetters <- generateStartingLetters
+  testPossibleWords (shrinkTrie randomLetters dict) randomLetters
   isValid <- isValid randomLetters
   if isValid
     then return randomLetters 
