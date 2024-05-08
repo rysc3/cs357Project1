@@ -4,9 +4,12 @@ module Score (
   getLetterScore
 ) where 
 
+
 import Data.Char (toUpper)  -- for getScores method
 
+
 type Score = (Char, Int)
+
 
 parseLine :: String -> Score
 parseLine line =
@@ -14,15 +17,11 @@ parseLine line =
     [char, score] -> (head char, read score :: Int)
     _             -> error "should be char, score"
 
+
 readScoresFromFile :: FilePath -> IO [Score]
 readScoresFromFile filePath = do
   content <- readFile filePath
   return $ map parseLine (lines content)
-
-
-
-
---------------- Public Methods ----------------
 
 
 {-
@@ -41,6 +40,7 @@ getScoringData filePath = do
   scores <- readScoresFromFile filePath
   return $ map (\(char, score) -> (toUpper char, score)) scores   -- convert all letters to uppercase
 
+
 {-
   Breaks down the Score type, we pass in a character and our score type, and it will return the integer score for that character. 
 
@@ -54,6 +54,7 @@ getLetterScore _ [] = 0
 getLetterScore x ((char, score):rest) 
   | toUpper x == char = score
   | otherwise = getLetterScore x rest
+
 
 {-
   Calculates the score of a given word by calculating the score of each letter, and also adding on a letter count multiplier

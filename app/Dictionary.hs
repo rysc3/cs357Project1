@@ -8,20 +8,20 @@ module Dictionary(
   printTrie
 ) where
 
+
 import qualified Data.Map.Strict as M --need a map because we don't know how many children each node is going to have
-import Data.Text (pack, unpack, splitOn)
 import Data.Char (toUpper)
 import qualified Data.Text.IO as TIO
 import qualified Data.Text as T
 import Data.List (nub)
 
--- maisy was here
 
 data Trie = Node {
   endOfWord :: Bool,
   children :: M.Map Char Trie
 }
   deriving (Eq, Show)
+
 
 {-
   Input from the dictionary file is of the type:
@@ -37,6 +37,7 @@ data Trie = Node {
 -}
 emptyTrie :: Trie
 emptyTrie = Node False M.empty
+
 
 insert :: String -> Trie -> Trie
 insert [] trie = trie { endOfWord = True }
@@ -56,9 +57,11 @@ insert word trie
     hasDuplicates :: String -> Bool
     hasDuplicates word = length word /= length (nub word)
 
+
 contains :: String -> Trie -> Bool
 contains [] trie = endOfWord trie
 contains (x:xs) trie = maybe False (contains (map toUpper xs)) (M.lookup (toUpper x) (children trie)) --need to handle for nothing or Just cases when called 
+
 
 buildDictionary :: FilePath -> IO Trie
 buildDictionary filePath = do
@@ -75,8 +78,10 @@ getListOfStrings s = map T.unpack (T.splitOn charsToText s)
   where 
     charsToText = T.pack "\r\n"   -- these need to be Text
 
+
 readFileText :: FilePath -> IO T.Text
 readFileText filePath = TIO.readFile filePath
+
 
 countWords :: Trie -> Int
 countWords trie =  ( countWords' trie) -1
@@ -85,8 +90,10 @@ countWords trie =  ( countWords' trie) -1
     countWords' (Node True childrenMap) = 1 + sum (map countWords' (M.elems childrenMap))
     countWords' (Node False childrenMap) = sum (map countWords' (M.elems childrenMap))
 
+
 printTrie :: Trie -> IO ()
 printTrie = printTrie' ""
+
 
 printTrie' :: String -> Trie -> IO ()
 printTrie' prefix (Node endOfWord children) = do
@@ -100,11 +107,13 @@ printTrie' prefix (Node endOfWord children) = do
 shrinkTrie :: [Char] -> Trie -> Trie
 shrinkTrie letters trie = limitDupes (map toUpper letters) $ chopDepth (pruneBadBranch trie letters)
 
+
 pruneBadBranch :: Trie -> [Char] -> Trie
 pruneBadBranch trie chars = trie { children = prunedChildren }
   where
     prunedChildren = M.map (\child -> pruneBadBranch child (map toUpper chars)) 
         $ M.filterWithKey (\k _ -> k `elem` (map toUpper chars)) (children trie)
+
 
 chopDepth :: Trie -> Trie
 chopDepth trie = chopOffAtDepth' trie 0
@@ -118,5 +127,3 @@ chopDepth trie = chopOffAtDepth' trie 0
 
 limitDupes :: [Char] -> Trie -> Trie
 limitDupes _ t = id t
-
-

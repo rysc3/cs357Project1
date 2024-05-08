@@ -6,12 +6,8 @@ import Score (getScoringData, getWordScore)
 
 
 -- External imports
-import Control.Monad (when)
-import Data.Time.Clock
-import Data.Time.Format
-import Data.Char (isAlpha, toUpper)
+import Data.Char (toUpper)
 import System.Random (randomRIO)
-import Data.List (nub)
 
 
 -- Brick things --
@@ -20,29 +16,15 @@ import qualified Brick as BR
 import qualified Brick.Widgets.Border as B
 import qualified Brick.Widgets.Center as C
 import qualified Brick.Widgets.Border.Style as BS
-import Brick.Widgets.Border as BR (border)
-import GHC.Base (build)
 import Control.Monad.IO.Class (liftIO)
 import System.Exit (exitSuccess)
-import qualified Brick.Widgets.Border.Style as BS
-import qualified Brick.Widgets.Table as T
-import qualified Brick.Widgets.Border as B
 import Brick.Types (Widget)
--- import Brick.Main as BR (App(..), defaultMain, neverShowCursor)
--- import Brick.Types as BR (Widget, BrickEvent(..), EventM, get, put)
--- import Brick.Widgets.Core as BR (str, withAttr, (<+>), vBox, hBox)
--- import Brick.AttrMap as BR (AttrMap, attrMap, AttrName, attrName)
 
 
 main = do
-  -- print your starting letters to terminal
-  -- putStrLn "----- Starting Letters -----"
-  -- startingLetters <- generateStartingLetters
-  -- putStrLn startingLetters
-  -- putStrLn "----------------------------"
-
   initialState <- initialize
   BR.defaultMain app initialState
+
 
 data State = State
   { dictionary :: Trie,
@@ -52,6 +34,7 @@ data State = State
     availLetters :: String,
     score :: (Int, Int)
   }
+
 
 initialize :: IO State
 initialize = do
@@ -64,56 +47,34 @@ initialize = do
 
   -- Initialize State
   playedLetters <- return ""
-  availLetters <- generateLetters dictionary  -- @ryan generate
+  availLetters <- generateLetters dictionary  -- generate
 
   -- use AI to shrink trie
-  -- putStrLn "--- Shrinking Dictionary ---"
   let actualSize = length $ lines dictionaryContents
-  -- putStrLn $ "Actual Size: " ++ show actualSize
-  -- putStrLn "---"
-
   let startDictionary = countWords dictionary
-  -- putStrLn $ "Start: " ++ show startDictionary
-  -- putStrLn "---"
 
   let shrunken = shrinkTrie availLetters dictionary
 
   let endDictionary = countWords shrunken
-  -- putStrLn $ "End: " ++ show endDictionary
-  -- putStrLn "---"
-  -- putStrLn "Dictionary Shrunk"
 
-  -- TODO @here I'm kinda just fibbin around about the number of words to estimate how many words have duplicate letters
   let score = (0, round $ fromIntegral (countWords shrunken))  -- save score to pass into initial state with num of possible words
 
-  -- Print all words in shrunken dictionary
-  -- let allWords = getAllWords shrunken
-  -- mapM_ putStrLn allWords
-
-  -- putStrLn "----------------------------"
-  testPossibleWords shrunken availLetters
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters, score = score, playedWords = playedWords}
+
 
 {-
       -- Generate starting letters --
 -}
 generateLetters :: Trie -> IO String 
 generateLetters dict = do 
-  -- putStrLn "----------------"
   randomLetters <- generateStartingLetters
   isValid <- isValid randomLetters
   if isValid
     then do 
-      -- testPossibleWords (shrinkTrie randomLetters dict) randomLetters
       return randomLetters 
     else do
-      -- putStrLn "letters: "
-      -- putStrLn randomLetters
-      -- putStrLn "word:"
       let shrunkenTrie = shrinkTrie randomLetters dict
           wordCount = countWords shrunkenTrie
-      -- print wordCount
-      -- putStrLn "----------------"
       generateLetters dict
   where 
     isValid :: String -> IO Bool 
@@ -121,6 +82,7 @@ generateLetters dict = do
       let shrunkenTrie = shrinkTrie letters dict
           wordCount = countWords shrunkenTrie
       return (wordCount > 200)   -- Turned this way up so we don't run into any bad examples during the presentation. Still goes fast
+
 
 generateStartingLetters :: IO String
 generateStartingLetters = do
@@ -143,6 +105,7 @@ generateStartingLetters = do
     generateRandomChar :: IO Char
     generateRandomChar = randomRIO ('B', 'Z')
 
+
 testPossibleWords :: Trie -> String -> IO ()
 testPossibleWords t s = do
   putStrLn $ " >> TESTING PRUNED DICT: "
@@ -154,21 +117,26 @@ testPossibleWords t s = do
 removeLetter :: Char -> [Char] -> [Char]
 removeLetter c avail = filter (/= c) avail
 
+
 getLastLetter :: [Char] -> Char
 getLastLetter [] = ' '
 getLastLetter (x : xs) = if null xs then x else getLastLetter xs
 
+
 addLetter :: Char -> [Char] -> [Char]
 addLetter c xs = xs ++ [c]
+
 
 addLetters :: String -> [Char] -> [Char]
 addLetters [] avail = avail
 addLetters (c : cs) avail = addLetters cs (removeLetter c avail)
 
 
+{-
+      -- Draw Methods --
+-}
 defaultColor :: V.Color
 defaultColor = V.black
-
 
 
 -- Function to draw available letters in a table
@@ -179,6 +147,7 @@ drawavailLetters avail =
         table = BR.hBox cells
     in
         B.borderWithLabel (BR.str "Available Letters") table
+
 
 -- Function to draw played letters in a table
 drawPlayedLetters :: [Char] -> Widget ()
@@ -242,7 +211,7 @@ endOfGameGUI s =
     let wordList = map fst (playedWords s)
         percent = (fromIntegral (length wordList) / fromIntegral (snd (score s)) * 100)
         totalScore = fst (score s)
-        wordText = "Words used: " ++ foldr (\word acc -> word ++ ", " ++ acc) "" (init wordList) ++ last wordList -- Display all words except the last one (which is empty
+        wordText = "Words used: " ++ foldr (\word acc -> word ++ " " ++ acc) "" (init wordList) ++ last wordList -- Display all words except the last one (which is empty
         percentText = "Percentage of words found: " ++ show (round percent) ++ "%"
         scoreText = "Total Score: " ++ show totalScore ++ "\nWords: " ++ show ((length $ playedWords s) - 1) ++ " / " ++ show (snd $ score s)
         content = BR.vBox [BR.str wordText, BR.str percentText, BR.str scoreText]
@@ -252,6 +221,9 @@ endOfGameGUI s =
         borderedContent = BR.withBorderStyle BS.unicodeBold $ B.borderWithLabel (BR.str "Game Over") centeredContent
     in
         borderedContent
+{-
+      -- Draw Methods --
+-}
 
 
 handleEvent :: BR.BrickEvent () () -> BR.EventM () State ()
@@ -299,5 +271,5 @@ app =
       BR.appChooseCursor = BR.neverShowCursor,
       BR.appHandleEvent = handleEvent,
       BR.appStartEvent = return (),
-      BR.appAttrMap = const $ BR.attrMap V.defAttr [] -- I don't really know what this actually does but it makes things work lol
+      BR.appAttrMap = const $ BR.attrMap V.defAttr []
     }
