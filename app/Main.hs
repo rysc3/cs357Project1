@@ -87,6 +87,14 @@ addLetters :: String -> [Char] -> [Char]
 addLetters [] avail = avail
 addLetters (c : cs) avail = addLetters cs (removeLetter c avail)
 
+
+{-
+      -- Draw Methods --
+-}
+
+defaultColor :: V.Color
+defaultColor = V.black
+
 drawavailLetters :: [Char] -> BR.Widget ()
 drawavailLetters avail = BR.str $ "Your Letters: " ++ avail
 
@@ -114,8 +122,9 @@ drawUI s =
         C.center finalWidget
 
 
-defaultColor :: V.Color
-defaultColor = V.black
+{-
+      -- Draw Methods --
+-}
 
 
 handleEvent :: BR.BrickEvent () () -> BR.EventM () State ()
@@ -143,7 +152,6 @@ handleEvent (BR.VtyEvent (V.EvKey (V.KChar back) _)) = do
 handleEvent (BR.VtyEvent (V.EvKey V.KEsc _)) = do 
   liftIO $ putStrLn "Quitting Game"
   liftIO exitSuccess
-
 
 
 app :: BR.App State () ()
