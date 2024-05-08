@@ -3,7 +3,8 @@ module Dictionary(
   buildDictionary,
   contains,
   shrinkTrie,
-  countWords
+  countWords,
+  getAllWords
 ) where
 
 import qualified Data.Map.Strict as M --need a map because we don't know how many children each node is going to have
@@ -55,10 +56,6 @@ buildDictionary filePath = do
 -- AIsolver
 --getListOfStrings :: String -> [String]
 --getListOfStrings s = map unpack (splitOn (pack "\r\n") (pack s)) --convert string to text, split on \r\n, convert back to string
-
-
-
-
 shrinkTrie :: [Char] -> Trie -> Trie
 shrinkTrie letters trie = shrinkTrie' letters 0 trie
   where
@@ -95,3 +92,9 @@ getListOfStrings s = map T.unpack (T.splitOn charsToText s)
 readFileText :: FilePath -> IO T.Text
 readFileText filePath = TIO.readFile filePath
 
+getAllWords :: Trie -> [String]
+getAllWords trie = getAllWords' "" trie
+  where
+    getAllWords' :: String -> Trie -> [String]
+    getAllWords' prefix (Node True childrenMap) = prefix : concatMap (\(c, t) -> getAllWords' (prefix ++ [c]) t) (M.toList childrenMap)
+    getAllWords' prefix (Node False childrenMap) = concatMap (\(c, t) -> getAllWords' (prefix ++ [c]) t) (M.toList childrenMap)

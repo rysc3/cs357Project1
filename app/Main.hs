@@ -1,7 +1,7 @@
 module Main where
 
 -- Internal imports
-import Dictionary(Trie, buildDictionary, contains, shrinkTrie, countWords)
+import Dictionary(Trie, buildDictionary, contains, shrinkTrie, countWords, getAllWords)
 import Score (getScoringData, getWordScore)
 
 
@@ -78,6 +78,13 @@ initialize = do
 
   let endDictionary = countWords shrunken
   putStrLn $ "End: " ++ show endDictionary
+  putStrLn "---"
+  putStrLn "Dictionary Shrunk"
+
+  -- Print all words in shrunken dictionary
+  let allWords = getAllWords shrunken
+  mapM_ putStrLn allWords
+
   putStrLn "----------------------------"
 
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
@@ -127,20 +134,20 @@ drawScore score = BR.str $ "Total Score: " ++ show score
 
 drawUI :: State -> BR.Widget ()
 drawUI s =
-  let label = BR.withAttr (BR.attrName "label") . BR.str
-    -- redBackgroundAttr = BR.withAttr (BR.attrName "redBackground") . BR.str -- I can't figure out how to set a background color
-    borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Word Game")
-    content = BR.vBox
-      [ BR.str "Welcome to Word Game!"
-      , BR.str "" -- Spacer
-      , BR.hBox [drawPlayedLetters (playedLetters s), BR.str ""] -- Horizontal layout for middle section
-      , BR.hBox [drawavailLetters (availLetters s), drawScore (getWordScore (playedLetters s) (scoring s))] -- Horizontal layout for bottom section
-      ]
-    borderedContent = borderLabel content
-    -- Widget with yellow background and borders all around
-    finalWidget = BR.withAttr (BR.attrName "redBackground") borderedContent
-  in
-    C.center finalWidget
+    let label = BR.withAttr (BR.attrName "label") . BR.str
+        -- redBackgroundAttr = BR.withAttr (BR.attrName "redBackground") . BR.str -- I can't figure out how to set a background color
+        borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Word Game")
+        content = BR.vBox
+            [ BR.str "Welcome to Word Game!"
+            , BR.str "" -- Spacer
+            , BR.hBox [drawPlayedLetters (playedLetters s), BR.str ""] -- Horizontal layout for middle section
+            , BR.hBox [drawavailLetters (availLetters s), drawScore (getWordScore (playedLetters s) (scoring s))] -- Horizontal layout for bottom section
+            ]
+        borderedContent = borderLabel content
+        -- Widget with yellow background and borders all around
+        finalWidget = BR.withAttr (BR.attrName "redBackground") borderedContent
+    in
+        C.center finalWidget
 
 
 {-
