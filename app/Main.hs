@@ -13,24 +13,26 @@ import Data.Char (isAlpha, toUpper)
 import System.Random (randomRIO)
 import Data.List (nub)
 
+
 -- Brick things --
 import qualified Graphics.Vty as V
 import qualified Brick as BR
 import qualified Brick.Widgets.Border as B
 import qualified Brick.Widgets.Center as C
 import qualified Brick.Widgets.Border.Style as BS
--- import Brick.Main as BR (App(..), defaultMain, neverShowCursor)
--- import Brick.Types as BR (Widget, BrickEvent(..), EventM, get, put)
--- import Brick.Widgets.Core as BR (str, withAttr, (<+>), vBox, hBox)
 import Brick.Widgets.Border as BR (border)
 import GHC.Base (build)
 import Control.Monad.IO.Class (liftIO)
 import System.Exit (exitSuccess)
--- import Brick.AttrMap as BR (AttrMap, attrMap, AttrName, attrName)
 import qualified Brick.Widgets.Border.Style as BS
 import qualified Brick.Widgets.Table as T
 import qualified Brick.Widgets.Border as B
 import Brick.Types (Widget)
+-- import Brick.Main as BR (App(..), defaultMain, neverShowCursor)
+-- import Brick.Types as BR (Widget, BrickEvent(..), EventM, get, put)
+-- import Brick.Widgets.Core as BR (str, withAttr, (<+>), vBox, hBox)
+-- import Brick.AttrMap as BR (AttrMap, attrMap, AttrName, attrName)
+
 
 main = do
   -- print your starting letters to terminal
@@ -45,9 +47,10 @@ main = do
 data State = State
   { dictionary :: Trie,
     scoring :: [(Char, Int)],
+    playedWords :: [String],
     playedLetters :: String,
     availLetters :: String,
-    score :: Int
+    score :: (Int, Int)
   }
 
 initialize :: IO State
@@ -56,7 +59,8 @@ initialize = do
   dictionaryContents <- readFile "Dictionaries/01-Dictionary.txt"
   dictionary <- buildDictionary "Dictionaries/01-Dictionary.txt"
   scores <- getScoringData "Dictionaries/01-Scoring.txt"
-  let score = 0   -- initial score
+  let score = (0,0)   -- initial score
+  let playedWords = [""]
 
   -- Initialize State
   playedLetters <- return ""
@@ -86,7 +90,7 @@ initialize = do
 
   putStrLn "----------------------------"
 
-  return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters, score = score}
+  return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters, score = score, playedWords = playedWords}
 
 testPossibleWords :: Trie -> String -> IO ()
 testPossibleWords t s = do
@@ -186,8 +190,11 @@ drawPlayedLetters played =
         B.borderWithLabel (BR.str "Played Letters") table
 
 
-drawScore :: Int -> BR.Widget ()
-drawScore score = BR.str $ "Total Score: " ++ show score
+drawScore :: Int -> State -> BR.Widget ()
+drawScore userScore s = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (BR.str "Score") . BR.vBox $
+    [ BR.str $ "Total Score: " ++ show userScore
+    , drawWordsCount s
+    ]
 
 
 drawUI :: State -> BR.Widget ()
@@ -198,14 +205,17 @@ drawUI s =
         content = BR.vBox
             [ BR.str "Welcome to Word Game!"
             , BR.str "" -- Spacer
-            , BR.hBox [drawPlayedLetters (playedLetters s), BR.str ""] -- Horizontal layout for middle section
-            , BR.hBox [drawavailLetters (availLetters s), drawScore (score s)] -- Horizontal layout for bottom section
+            , BR.hBox [drawPlayedLetters (playedLetters s), BR.str "", drawScore (fst (score s)) s] -- Horizontal layout for middle section
+            , BR.hBox [drawavailLetters (availLetters s)] -- Horizontal layout for bottom section
             ]
         borderedContent = borderLabel content
         -- Widget with yellow background and borders all around
         finalWidget = BR.withAttr (BR.attrName "redBackground") borderedContent
     in
         C.center finalWidget
+
+drawWordsCount :: State -> BR.Widget ()
+drawWordsCount s = BR.str $ "Words: " ++ show (length $ playedWords s) ++ " / " ++ show (snd $ score s)
 
 
 {-
@@ -219,9 +229,9 @@ handleEvent (BR.VtyEvent (V.EvKey V.KEnter _)) = do
   let word = playedLetters s
   if contains word (dictionary s)
     then do
-      let word_score = (getWordScore word (scoring s)) + (score s)  -- increment score
+      let word_score = (getWordScore word (scoring s)) + (fst $ score s) -- increment user score
       liftIO $ putStrLn $ word ++ " is in trie | " ++ " new score: " ++ show word_score
-      BR.put $ s {playedLetters = "", availLetters = (availLetters s) ++ (playedLetters s), score = word_score}
+      BR.put $ s {playedLetters = "", availLetters = (availLetters s) ++ (playedLetters s), score = (word_score, snd $ score s)}
       return ()
     else do
       BR.put $ s {playedLetters = "", availLetters = (availLetters s) ++ (playedLetters s)}
@@ -236,13 +246,11 @@ handleEvent (BR.VtyEvent (V.EvKey (V.KChar c) _)) = do
       return ()
 handleEvent (BR.VtyEvent (V.EvKey V.KBS _)) = do
   s <- BR.get
-  let lastLetter = getLastLetter (playedLetters s)
-  BR.put $ s {playedLetters = filter (/= lastLetter) (playedLetters s), availLetters = (availLetters s) ++ [lastLetter]}
+  BR.put $ s {playedLetters = "", availLetters = (availLetters s) ++ (playedLetters s)}
   return ()
-handleEvent (BR.VtyEvent (V.EvKey V.KEsc _)) = do 
+handleEvent (BR.VtyEvent (V.EvKey V.KEsc _)) = do
   liftIO $ putStrLn "Quitting Game"
   liftIO exitSuccess
-
 
 app :: BR.App State () ()
 app =
