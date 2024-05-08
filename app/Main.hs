@@ -9,12 +9,9 @@ import Score (getScoringData, getWordScore)
 import Control.Monad (when)
 import Data.Time.Clock
 import Data.Time.Format
-import Data.Char (isAlpha)
-
-import System.Random
-import Data.Char (chr)
-import Foreign.Marshal.Unsafe
-
+import Data.Char (isAlpha, toUpper)
+import System.Random (randomRIO)
+import Data.List (nub)
 
 -- Brick things --
 import qualified Graphics.Vty as V
@@ -30,8 +27,18 @@ import GHC.Base (build)
 import Control.Monad.IO.Class (liftIO)
 import System.Exit (exitSuccess)
 -- import Brick.AttrMap as BR (AttrMap, attrMap, AttrName, attrName)
+import qualified Brick.Widgets.Border.Style as BS
+import qualified Brick.Widgets.Table as T
+import qualified Brick.Widgets.Border as B
+import Brick.Types (Widget)
 
 main = do
+  -- print your starting letters to terminal
+  putStrLn "----- Starting Letters -----"
+  startingLetters <- generateStartingLetters
+  putStrLn startingLetters
+  putStrLn "----------------------------"
+
   initialState <- initialize
   BR.defaultMain app initialState
 
@@ -39,35 +46,44 @@ data State = State
   { dictionary :: Trie,
     scoring :: [(Char, Int)],
     playedLetters :: String,
-    availLetters :: String,
-    possibleWords :: Trie
+    availLetters :: String
   }
 
-{-
-  - Dictionary seems to be working
-  - Scoring seems to be working 
-
-  - still need to figure out tracking played letters 
-  - Still need to generate random letters to start **
-  -- Need AI for that part
--}
 initialize :: IO State
 initialize = do
+  -- Read in files
+  dictionaryContents <- readFile "Dictionaries/01-Dictionary.txt"
   dictionary <- buildDictionary "Dictionaries/01-Dictionary.txt"
   scores <- getScoringData "Dictionaries/01-Scoring.txt"
-  -- Test some example words
-  let exampleWords = ["hello", "world", "example"]
-  mapM_ (\word -> testGetWordScore scores word) exampleWords
-  let playedLetters = "" -- TODO: figure this out
-<<<<<<< HEAD
-      availLetters = unsafeLocalState (getLetterSet 5 "ae")
-        -- unsafeLocalState (getLetterSet 5 "ae") 
-        -- unsafeLocalState (getLetterSet 7 []) 
-  let possibleWords = shrinkTrie availLetters dictionary
-  testPossibleWords possibleWords availLetters
-  return State {dictionary = dictionary, scoring = scores,
-                  playedLetters = playedLetters, availLetters = availLetters,
-                  possibleWords=possibleWords}
+
+  -- Initialize State
+  playedLetters <- return ""
+  availLetters <- generateLetters dictionary  -- @ryan generate
+
+  -- use AI to shrink trie
+  putStrLn "--- Shrinking Dictionary ---"
+  let actualSize = length $ lines dictionaryContents
+  putStrLn $ "Actual Size: " ++ show actualSize
+  putStrLn "---"
+
+  let startDictionary = countWords dictionary
+  putStrLn $ "Start: " ++ show startDictionary
+  putStrLn "---"
+
+  let shrunken = shrinkTrie availLetters dictionary
+
+  let endDictionary = countWords shrunken
+  putStrLn $ "End: " ++ show endDictionary
+  putStrLn "---"
+  putStrLn "Dictionary Shrunk"
+
+  -- Print all words in shrunken dictionary
+  -- let allWords = getAllWords shrunken
+  -- mapM_ putStrLn allWords
+
+  putStrLn "----------------------------"
+
+  return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
 
 testPossibleWords :: Trie -> String -> IO ()
 testPossibleWords t s = do
@@ -75,35 +91,53 @@ testPossibleWords t s = do
   putStrLn $ "      set : " ++ s
   putStrLn $ "      size: " ++ (show $ countWords t)
   printTrie t
-=======
-      availLetters = unsafeLocalState (getLetterSet 5 "ae") -- TODO: generate random letters on start
-  return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
->>>>>>> 7f0256acb9abc2ebfdf3ef6b51b76259210c8f5d
 
-testGetWordScore :: [(Char, Int)] -> String -> IO ()
-testGetWordScore scores word = do
-  putStrLn $ " -- " ++ word ++ " --"
-  putStrLn $ show $ getWordScore word scores
 
--- generate list of random letters
-randomChar :: IO Char
-<<<<<<< HEAD
-randomChar = fmap chr (randomRIO (97, 122)) -- TODO: change to upper ascii ?
-=======
-randomChar = fmap chr (randomRIO (97, 122))
->>>>>>> 7f0256acb9abc2ebfdf3ef6b51b76259210c8f5d
+generateLetters :: Trie -> IO String 
+generateLetters dict = do 
+  putStrLn "----------------"
+  randomLetters <- generateStartingLetters
+  isValid <- isValid randomLetters
+  if isValid
+    then return randomLetters 
+    else do
+      putStrLn "letters: "
+      putStrLn randomLetters
+      putStrLn "word:"
+      let shrunkenTrie = shrinkTrie randomLetters dict
+          wordCount = countWords shrunkenTrie
+      print wordCount
+      putStrLn "----------------"
+      generateLetters dict
+  where 
+    isValid :: String -> IO Bool 
+    isValid letters = do
+      let shrunkenTrie = shrinkTrie letters dict
+          wordCount = countWords shrunkenTrie
+      return (wordCount > 30)
 
-getSet :: Int -> IO [Char]
-getSet n = sequence $ replicate n randomChar
 
-getLetterSet :: Int -> [Char] -> IO [Char]
-getLetterSet n ls = fmap (++ ls) (getSet n)
--- for 7 random letters use :  getLetterSet 7 []
-<<<<<<< HEAD
--- for it always w [a,e] use:  getLetterSet 5 "ae"
-=======
--- for set always w "ae" use:  getLetterSet 5 "ae"
->>>>>>> 7f0256acb9abc2ebfdf3ef6b51b76259210c8f5d
+generateStartingLetters :: IO String
+generateStartingLetters = do
+  -- Always start with A and E so there will be enough words that can be generated
+  let startingLetters = ['A', 'E']
+  -- get list of 7 characters
+  finalChars <- getMoreChars startingLetters
+  return finalChars
+  where
+    getMoreChars :: String -> IO String
+    getMoreChars chars
+      | length chars == 7 = return chars
+      | otherwise = do
+          -- Generate a random character
+          randomChar <- generateRandomChar
+          if randomChar `notElem` chars
+            then getMoreChars (randomChar : chars)
+            else getMoreChars chars
+
+    generateRandomChar :: IO Char
+    generateRandomChar = randomRIO ('B', 'Z')
+
 
 removeLetter :: Char -> [Char] -> [Char]
 removeLetter c avail = filter (/= c) avail
@@ -119,20 +153,43 @@ addLetters :: String -> [Char] -> [Char]
 addLetters [] avail = avail
 addLetters (c : cs) avail = addLetters cs (removeLetter c avail)
 
-drawavailLetters :: [Char] -> BR.Widget ()
-drawavailLetters avail = BR.str $ "Your Letters: " ++ avail
 
-drawPlayedLetters :: [Char] -> BR.Widget ()
-drawPlayedLetters played = BR.str $ "Current Play: " ++ played
+{-
+      -- Draw Methods --
+-}
+
+defaultColor :: V.Color
+defaultColor = V.black
+
+type TableCell = BR.Widget ()
+
+-- Function to draw available letters in a table
+drawavailLetters :: [Char] -> Widget ()
+drawavailLetters avail =
+    let paddedChars = take 7 (avail ++ repeat ' ') -- Ensure we have at least 7 characters, padding with spaces if necessary
+        cells = map (\c -> B.border (BR.padLeftRight 1 $ BR.str [c])) paddedChars
+        table = BR.hBox cells
+    in
+        B.borderWithLabel (BR.str "Available Letters") table
+
+-- Function to draw played letters in a table
+drawPlayedLetters :: [Char] -> Widget ()
+drawPlayedLetters played =
+    let paddedChars = take 7 (played ++ repeat ' ') -- Ensure we have at least 7 characters, padding with spaces if necessary
+        cells = map (\c -> B.border (BR.padLeftRight 1 $ BR.str [c])) paddedChars
+        table = BR.hBox cells
+    in
+        B.borderWithLabel (BR.str "Played Letters") table
+
 
 drawScore :: Int -> BR.Widget ()
-drawScore score = BR.str $ " Total Score: " ++ show score
+drawScore score = BR.str $ "Total Score: " ++ show score
 
 drawUI :: State -> BR.Widget ()
 drawUI s =
     let label = BR.withAttr (BR.attrName "label") . BR.str
         -- redBackgroundAttr = BR.withAttr (BR.attrName "redBackground") . BR.str -- I can't figure out how to set a background color
-        borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Word Game")
+        borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Word Game") . BR.padAll 1 
         content = BR.vBox
             [ BR.str "Welcome to Word Game!"
             , BR.str "" -- Spacer
@@ -146,8 +203,9 @@ drawUI s =
         C.center finalWidget
 
 
-defaultColor :: V.Color
-defaultColor = V.black
+{-
+      -- Draw Methods --
+-}
 
 
 handleEvent :: BR.BrickEvent () () -> BR.EventM () State ()
@@ -165,9 +223,13 @@ handleEvent (BR.VtyEvent (V.EvKey V.KEnter _)) = do
       return ()
 handleEvent (BR.VtyEvent (V.EvKey (V.KChar c) _)) = do
   s <- BR.get
-  BR.put $ s {playedLetters = addLetter c (playedLetters s), availLetters = removeLetter c (availLetters s)}
-  return ()
-handleEvent (BR.VtyEvent (V.EvKey (V.KChar back) _)) = do
+  if elem (toUpper c) (availLetters s)
+    then do
+      BR.put $ s {playedLetters = addLetter (toUpper c) (playedLetters s), availLetters = removeLetter (toUpper c) (availLetters s)}
+      return ()
+    else do
+      return ()
+handleEvent (BR.VtyEvent (V.EvKey V.KBS _)) = do
   s <- BR.get
   let lastLetter = getLastLetter (playedLetters s)
   BR.put $ s {playedLetters = filter (/= lastLetter) (playedLetters s), availLetters = (availLetters s) ++ [lastLetter]}
@@ -175,7 +237,6 @@ handleEvent (BR.VtyEvent (V.EvKey (V.KChar back) _)) = do
 handleEvent (BR.VtyEvent (V.EvKey V.KEsc _)) = do 
   liftIO $ putStrLn "Quitting Game"
   liftIO exitSuccess
-
 
 
 app :: BR.App State () ()
