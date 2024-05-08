@@ -1,7 +1,7 @@
 module Main where
 
 -- Internal imports
-import Dictionary(Trie, buildDictionary, contains)
+import Dictionary(Trie, buildDictionary, contains, shrinkTrie, countWords, getAllWords)
 import Score (getScoringData, getWordScore)
 
 
@@ -9,8 +9,8 @@ import Score (getScoringData, getWordScore)
 import Control.Monad (when)
 import Data.Time.Clock
 import Data.Time.Format
-import Data.Char (isAlpha, toUpper)
-
+import Data.Char (isAlpha)
+import System.Random (randomRIO)
 
 -- Brick things --
 import qualified Graphics.Vty as V
@@ -32,6 +32,12 @@ import qualified Brick.Widgets.Border as B
 import Brick.Types (Widget)
 
 main = do
+  -- print your starting letters to terminal
+  putStrLn "----- Starting Letters -----"
+  startingLetters <- generateStartingLetters
+  putStrLn startingLetters
+  putStrLn "----------------------------"
+
   initialState <- initialize
   BR.defaultMain app initialState
 
@@ -44,19 +50,50 @@ data State = State
 
 initialize :: IO State
 initialize = do
+  -- Read in files
+  dictionaryContents <- readFile "Dictionaries/01-Dictionary.txt"
   dictionary <- buildDictionary "Dictionaries/01-Dictionary.txt"
   scores <- getScoringData "Dictionaries/01-Scoring.txt"
-  -- Test some example words
-  let exampleWords = ["hello", "world", "example"]
-  mapM_ (\word -> testGetWordScore scores word) exampleWords
-  let playedLetters = "" -- TODO: figure this out
-      availLetters = "AJZIKLQ" -- TODO: generate random letters on start
+
+  -- Initialize State
+  playedLetters <- return ""
+  availLetters <- generateStartingLetters
+
+  -- use AI to shrink trie
+  putStrLn "--- Shrinking Dictionary ---"
+  let actualSize = length $ lines dictionaryContents
+  putStrLn $ "Actual Size: " ++ show actualSize
+  putStrLn "---"
+
+  let startDictionary = countWords dictionary
+  putStrLn $ "Start: " ++ show startDictionary
+  putStrLn "---"
+
+  let shrunken = shrinkTrie availLetters dictionary
+
+  let endDictionary = countWords shrunken
+  putStrLn $ "End: " ++ show endDictionary
+  putStrLn "---"
+  putStrLn "Dictionary Shrunk"
+
+  -- Print all words in shrunken dictionary
+  let allWords = getAllWords shrunken
+  mapM_ putStrLn allWords
+
+  putStrLn "----------------------------"
+
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
 
-testGetWordScore :: [(Char, Int)] -> String -> IO ()
-testGetWordScore scores word = do
-  putStrLn $ " -- " ++ word ++ " --"
-  putStrLn $ show $ getWordScore word scores
+
+-- Generate 7 starting Letters, always a,e + 5 randomly generated letters
+generateStartingLetters :: IO String
+generateStartingLetters = do
+  randomChars <- sequence $ replicate 5 generateRandomChar
+  -- Always start with a, e
+  return $ 'a' : 'e' : randomChars
+  where
+    generateRandomChar :: IO Char
+    generateRandomChar = randomRIO ('a', 'z')
 
 
 removeLetter :: Char -> [Char] -> [Char]
@@ -72,6 +109,14 @@ addLetter c xs = xs ++ [c]
 addLetters :: String -> [Char] -> [Char]
 addLetters [] avail = avail
 addLetters (c : cs) avail = addLetters cs (removeLetter c avail)
+
+
+{-
+      -- Draw Methods --
+-}
+
+defaultColor :: V.Color
+defaultColor = V.black
 
 type TableCell = BR.Widget ()
 
@@ -115,8 +160,9 @@ drawUI s =
         C.center finalWidget
 
 
-defaultColor :: V.Color
-defaultColor = V.black
+{-
+      -- Draw Methods --
+-}
 
 
 handleEvent :: BR.BrickEvent () () -> BR.EventM () State ()
@@ -148,7 +194,6 @@ handleEvent (BR.VtyEvent (V.EvKey V.KBS _)) = do
 handleEvent (BR.VtyEvent (V.EvKey V.KEsc _)) = do 
   liftIO $ putStrLn "Quitting Game"
   liftIO exitSuccess
-
 
 
 app :: BR.App State () ()
