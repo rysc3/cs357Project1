@@ -58,7 +58,7 @@ initialize = do
 
   -- Initialize State
   playedLetters <- return ""
-  availLetters <- generateStartingLetters
+  availLetters <- generateLetters dictionary  -- @ryan generate
 
   -- use AI to shrink trie
   putStrLn "--- Shrinking Dictionary ---"
@@ -84,6 +84,24 @@ initialize = do
   putStrLn "----------------------------"
 
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
+
+
+generateLetters :: Trie -> IO String
+generateLetters dict = do 
+  -- Generate the first set of letters 
+  randomLetters <- generateStartingLetters
+
+  isValid <- isValid randomLetters
+  if isValid
+    then return randomLetters 
+    else generateLetters dict
+  where 
+    -- check for 30
+    isValid :: String -> IO Bool 
+    isValid letters = do
+      let shrunkenTrie = shrinkTrie letters dict
+          wordCount = countWords shrunkenTrie
+      return (wordCount > 30)
 
 
 generateStartingLetters :: IO String
