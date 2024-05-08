@@ -36,10 +36,10 @@ import Brick.Types (Widget)
 
 main = do
   -- print your starting letters to terminal
-  putStrLn "----- Starting Letters -----"
-  startingLetters <- generateStartingLetters
-  putStrLn startingLetters
-  putStrLn "----------------------------"
+  -- putStrLn "----- Starting Letters -----"
+  -- startingLetters <- generateStartingLetters
+  -- putStrLn startingLetters
+  -- putStrLn "----------------------------"
 
   initialState <- initialize
   BR.defaultMain app initialState
@@ -67,21 +67,21 @@ initialize = do
   availLetters <- generateLetters dictionary  -- @ryan generate
 
   -- use AI to shrink trie
-  putStrLn "--- Shrinking Dictionary ---"
+  -- putStrLn "--- Shrinking Dictionary ---"
   let actualSize = length $ lines dictionaryContents
-  putStrLn $ "Actual Size: " ++ show actualSize
-  putStrLn "---"
+  -- putStrLn $ "Actual Size: " ++ show actualSize
+  -- putStrLn "---"
 
   let startDictionary = countWords dictionary
-  putStrLn $ "Start: " ++ show startDictionary
-  putStrLn "---"
+  -- putStrLn $ "Start: " ++ show startDictionary
+  -- putStrLn "---"
 
   let shrunken = shrinkTrie availLetters dictionary
 
   let endDictionary = countWords shrunken
-  putStrLn $ "End: " ++ show endDictionary
-  putStrLn "---"
-  putStrLn "Dictionary Shrunk"
+  -- putStrLn $ "End: " ++ show endDictionary
+  -- putStrLn "---"
+  -- putStrLn "Dictionary Shrunk"
 
   {-
     First we call generateStartingLetters to get a random list of 7 characters. 
@@ -100,13 +100,13 @@ initialize = do
     Both of these conditions must be met for the game to start
   -}
   -- TODO @here I'm kinda just fibbin around about the number of words to estimate how many words have duplicate letters
-  let score = (-1, round $ fromIntegral (countWords shrunken) / 4)  -- save score to pass into initial state with num of possible words
+  let score = (0, round $ fromIntegral (countWords shrunken) / 4)  -- save score to pass into initial state with num of possible words
 
   -- Print all words in shrunken dictionary
   -- let allWords = getAllWords shrunken
   -- mapM_ putStrLn allWords
 
-  putStrLn "----------------------------"
+  -- putStrLn "----------------------------"
 
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters, score = score, playedWords = playedWords}
 
@@ -115,28 +115,28 @@ initialize = do
 -}
 generateLetters :: Trie -> IO String 
 generateLetters dict = do 
-  putStrLn "----------------"
+  -- putStrLn "----------------"
   randomLetters <- generateStartingLetters
   isValid <- isValid randomLetters
   if isValid
     then do 
-      testPossibleWords (shrinkTrie randomLetters dict) randomLetters
+      -- testPossibleWords (shrinkTrie randomLetters dict) randomLetters
       return randomLetters 
     else do
-      putStrLn "letters: "
-      putStrLn randomLetters
-      putStrLn "word:"
+      -- putStrLn "letters: "
+      -- putStrLn randomLetters
+      -- putStrLn "word:"
       let shrunkenTrie = shrinkTrie randomLetters dict
           wordCount = countWords shrunkenTrie
-      print wordCount
-      putStrLn "----------------"
+      -- print wordCount
+      -- putStrLn "----------------"
       generateLetters dict
   where 
     isValid :: String -> IO Bool 
     isValid letters = do
       let shrunkenTrie = shrinkTrie letters dict
           wordCount = countWords shrunkenTrie
-      return (wordCount > 30)
+      return (wordCount > 1000)   -- Turned this way up so we don't run into any bad examples during the presentation. Still goes fast
 
 generateStartingLetters :: IO String
 generateStartingLetters = do
@@ -238,9 +238,19 @@ drawUI s =
         C.center finalWidget
 
 drawWordsCount :: State -> BR.Widget ()
-drawWordsCount s = BR.str $ "Words: " ++ show (length $ playedWords s) ++ " / " ++ show (snd $ score s)
+drawWordsCount s = BR.str $ "Words: " ++ show ((length $ playedWords s) - 1) ++ " / " ++ show (snd $ score s)
 
-
+endOfGameGUI :: State -> Widget ()
+endOfGameGUI s =
+    let wordList = playedWords s
+        percent = (fromIntegral (length wordList) / fromIntegral (snd (score s)) * 100) * 4   -- We are rounding the number in initialize, must even that out here
+        totalScore = fst (score s)
+        wordText = "Words used: " ++ unwords wordList
+        percentText = "Percentage of words found: " ++ show (round percent) ++ "%"
+        scoreText = "Total score: " ++ show totalScore
+        content = BR.vBox [BR.str wordText, BR.str percentText, BR.str scoreText]
+    in
+        BR.withBorderStyle BS.unicodeBold $ B.borderWithLabel (BR.str "Game Over") content
 {-
       -- Draw Methods --
 -}
@@ -253,7 +263,7 @@ handleEvent (BR.VtyEvent (V.EvKey V.KEnter _)) = do
   if contains word (dictionary s)
     then do
       let word_score = (getWordScore word (scoring s)) + (fst $ score s) -- increment user score
-      liftIO $ putStrLn $ word ++ " is in trie | " ++ " new score: " ++ show word_score
+      -- liftIO $ putStrLn $ word ++ " is in trie | " ++ " new score: " ++ show word_score
       -- Add the valid word to the playedWords list
       let newPlayedWords = word : playedWords s
       BR.put $ s {playedLetters = "", availLetters = (availLetters s) ++ (playedLetters s), score = (word_score, snd $ score s), playedWords = newPlayedWords}
@@ -274,8 +284,12 @@ handleEvent (BR.VtyEvent (V.EvKey V.KBS _)) = do
   BR.put $ s {playedLetters = "", availLetters = (availLetters s) ++ (playedLetters s)}
   return ()
 handleEvent (BR.VtyEvent (V.EvKey V.KEsc _)) = do
-  liftIO $ putStrLn "Quitting Game"
-  liftIO exitSuccess
+    s <- BR.get
+    let scoreWidget = drawScore (fst (score s)) s
+    let endGameWidget = endOfGameGUI s
+    let finalWidget = BR.vBox [scoreWidget, endGameWidget]
+    liftIO $ BR.simpleMain finalWidget
+    liftIO exitSuccess
 
 
 app :: BR.App State () ()
