@@ -91,7 +91,7 @@ initialize = do
   -- mapM_ putStrLn allWords
 
   -- putStrLn "----------------------------"
-
+  testPossibleWords shrunken availLetters
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters, score = score, playedWords = playedWords}
 
 {-
@@ -120,7 +120,7 @@ generateLetters dict = do
     isValid letters = do
       let shrunkenTrie = shrinkTrie letters dict
           wordCount = countWords shrunkenTrie
-      return (wordCount > 1000)   -- Turned this way up so we don't run into any bad examples during the presentation. Still goes fast
+      return (wordCount > 1)   -- Turned this way up so we don't run into any bad examples during the presentation. Still goes fast
 
 generateStartingLetters :: IO String
 generateStartingLetters = do

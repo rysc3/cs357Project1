@@ -106,6 +106,7 @@ chopDepth trie = chopOffAtDepth' trie 0
         prunedChildren = M.map (\child -> chopOffAtDepth' child (depth + 1)) (children t)
 
 limitDupes :: [Char] -> Trie -> Trie
-limitDupes _ t = id t
--- TODO: implement this function
+limitDupes letters trie = trie { children = limitedChildren }
+  where
+    limitedChildren = M.map (\child -> limitDupes letters child) (M.filterWithKey (\k _ -> k `elem` letters) (children trie))
 
