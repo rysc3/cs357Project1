@@ -1,7 +1,7 @@
 module Main where
 
 -- Internal imports
-import Dictionary(Trie, buildDictionary, contains, shrinkTrie, countWords, getAllWords)
+import Dictionary(Trie, buildDictionary, contains)
 import Score (getScoringData, getWordScore)
 
 
@@ -9,9 +9,8 @@ import Score (getScoringData, getWordScore)
 import Control.Monad (when)
 import Data.Time.Clock
 import Data.Time.Format
-import Data.Char (isAlpha, toUpper)
+import Data.Char (isAlpha)
 import System.Random (randomRIO)
-import Data.List (nub)
 
 -- Brick things --
 import qualified Graphics.Vty as V
@@ -33,12 +32,6 @@ import qualified Brick.Widgets.Border as B
 import Brick.Types (Widget)
 
 main = do
-  -- print your starting letters to terminal
-  putStrLn "----- Starting Letters -----"
-  startingLetters <- generateStartingLetters
-  putStrLn startingLetters
-  putStrLn "----------------------------"
-
   initialState <- initialize
   BR.defaultMain app initialState
 
@@ -46,19 +39,22 @@ data State = State
   { dictionary :: Trie,
     scoring :: [(Char, Int)],
     playedLetters :: String,
-    availLetters :: String
+    availLetters :: String,
+    score :: Int
   }
 
 initialize :: IO State
 initialize = do
-  -- Read in files
-  dictionaryContents <- readFile "Dictionaries/01-Dictionary.txt"
   dictionary <- buildDictionary "Dictionaries/01-Dictionary.txt"
   scores <- getScoringData "Dictionaries/01-Scoring.txt"
 
   -- Initialize State
   playedLetters <- return ""
-  availLetters <- generateLetters dictionary  -- @ryan generate
+<<<<<<< Updated upstream
+  availLetters <- generateStartingLetters
+=======
+  availLetters <- generateStartingLetters  -- @ryan generate
+>>>>>>> Stashed changes
 
   -- use AI to shrink trie
   putStrLn "--- Shrinking Dictionary ---"
@@ -83,53 +79,18 @@ initialize = do
 
   putStrLn "----------------------------"
 
-  return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
+  return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters, score = 0}
 
 
-generateLetters :: Trie -> IO String 
-generateLetters dict = do 
-  putStrLn "----------------"
-  randomLetters <- generateStartingLetters
-  isValid <- isValid randomLetters
-  if isValid
-    then return randomLetters 
-    else do
-      putStrLn "letters: "
-      putStrLn randomLetters
-      putStrLn "word:"
-      let shrunkenTrie = shrinkTrie randomLetters dict
-          wordCount = countWords shrunkenTrie
-      print wordCount
-      putStrLn "----------------"
-      generateLetters dict
-  where 
-    isValid :: String -> IO Bool 
-    isValid letters = do
-      let shrunkenTrie = shrinkTrie letters dict
-          wordCount = countWords shrunkenTrie
-      return (wordCount > 30)
-
-
+-- Generate 7 starting Letters, always a,e + 5 randomly generated letters
 generateStartingLetters :: IO String
 generateStartingLetters = do
-  -- Always start with A and E so there will be enough words that can be generated
-  let startingLetters = ['A', 'E']
-  -- get list of 7 characters
-  finalChars <- getMoreChars startingLetters
-  return finalChars
+  randomChars <- sequence $ replicate 5 generateRandomChar
+  -- Always start with a, e
+  return $ 'a' : 'e' : randomChars
   where
-    getMoreChars :: String -> IO String
-    getMoreChars chars
-      | length chars == 7 = return chars
-      | otherwise = do
-          -- Generate a random character
-          randomChar <- generateRandomChar
-          if randomChar `notElem` chars
-            then getMoreChars (randomChar : chars)
-            else getMoreChars chars
-
     generateRandomChar :: IO Char
-    generateRandomChar = randomRIO ('B', 'Z')
+    generateRandomChar = randomRIO ('a', 'z')
 
 
 removeLetter :: Char -> [Char] -> [Char]
@@ -145,14 +106,6 @@ addLetter c xs = xs ++ [c]
 addLetters :: String -> [Char] -> [Char]
 addLetters [] avail = avail
 addLetters (c : cs) avail = addLetters cs (removeLetter c avail)
-
-
-{-
-      -- Draw Methods --
--}
-
-defaultColor :: V.Color
-defaultColor = V.black
 
 type TableCell = BR.Widget ()
 
@@ -176,7 +129,7 @@ drawPlayedLetters played =
 
 
 drawScore :: Int -> BR.Widget ()
-drawScore score = BR.str $ "Total Score: " ++ show score
+drawScore score = BR.str $ "Total Score: " ++ show score s
 
 drawUI :: State -> BR.Widget ()
 drawUI s =
@@ -187,7 +140,7 @@ drawUI s =
             [ BR.str "Welcome to Word Game!"
             , BR.str "" -- Spacer
             , BR.hBox [drawPlayedLetters (playedLetters s), BR.str ""] -- Horizontal layout for middle section
-            , BR.hBox [drawavailLetters (availLetters s), drawScore (getWordScore (playedLetters s) (scoring s))] -- Horizontal layout for bottom section
+            , BR.hBox [drawavailLetters (availLetters s), drawScore (score s)] -- Horizontal layout for bottom section
             ]
         borderedContent = borderLabel content
         -- Widget with yellow background and borders all around
@@ -196,9 +149,8 @@ drawUI s =
         C.center finalWidget
 
 
-{-
-      -- Draw Methods --
--}
+defaultColor :: V.Color
+defaultColor = V.black
 
 
 handleEvent :: BR.BrickEvent () () -> BR.EventM () State ()
@@ -207,9 +159,9 @@ handleEvent (BR.VtyEvent (V.EvKey V.KEnter _)) = do
   let word = playedLetters s
   if contains word (dictionary s)
     then do
-      let score = getWordScore word (scoring s)
-      liftIO $ putStrLn $ word ++ " is in trie | " ++ " score: " ++ show score
-      BR.put $ s {playedLetters = "", availLetters = addLetters word (availLetters s)}
+      let score2 = getWordScore word (scoring s)
+      liftIO $ putStrLn $ word ++ " is in trie | " ++ " score: " ++ show score2
+      BR.put $ s {playedLetters = "", availLetters = addLetters word (availLetters s), score = score2 + (score s)}
       return ()
     else do
       BR.put $ s {playedLetters = "", availLetters = (availLetters s) ++ (playedLetters s)}
@@ -230,6 +182,7 @@ handleEvent (BR.VtyEvent (V.EvKey V.KBS _)) = do
 handleEvent (BR.VtyEvent (V.EvKey V.KEsc _)) = do 
   liftIO $ putStrLn "Quitting Game"
   liftIO exitSuccess
+
 
 
 app :: BR.App State () ()
