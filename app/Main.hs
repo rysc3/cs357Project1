@@ -90,10 +90,10 @@ generateStartingLetters :: IO String
 generateStartingLetters = do
   randomChars <- sequence $ replicate 5 generateRandomChar
   -- Always start with a, e
-  return $ 'a' : 'e' : randomChars
+  return $ 'A' : 'E' : randomChars
   where
     generateRandomChar :: IO Char
-    generateRandomChar = randomRIO ('a', 'z')
+    generateRandomChar = randomRIO ('A', 'E')
 
 
 removeLetter :: Char -> [Char] -> [Char]
