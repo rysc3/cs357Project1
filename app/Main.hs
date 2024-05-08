@@ -39,7 +39,8 @@ data State = State
   { dictionary :: Trie,
     scoring :: [(Char, Int)],
     playedLetters :: String,
-    availLetters :: String
+    availLetters :: String,
+    score :: Int
   }
 
 initialize :: IO State
@@ -49,7 +50,11 @@ initialize = do
 
   -- Initialize State
   playedLetters <- return ""
+<<<<<<< Updated upstream
   availLetters <- generateStartingLetters
+=======
+  availLetters <- generateStartingLetters  -- @ryan generate
+>>>>>>> Stashed changes
 
   -- use AI to shrink trie
   putStrLn "--- Shrinking Dictionary ---"
@@ -74,7 +79,7 @@ initialize = do
 
   putStrLn "----------------------------"
 
-  return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
+  return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters, score = 0}
 
 
 -- Generate 7 starting Letters, always a,e + 5 randomly generated letters
@@ -124,7 +129,7 @@ drawPlayedLetters played =
 
 
 drawScore :: Int -> BR.Widget ()
-drawScore score = BR.str $ "Total Score: " ++ show score
+drawScore score = BR.str $ "Total Score: " ++ show score s
 
 drawUI :: State -> BR.Widget ()
 drawUI s =
@@ -135,7 +140,7 @@ drawUI s =
             [ BR.str "Welcome to Word Game!"
             , BR.str "" -- Spacer
             , BR.hBox [drawPlayedLetters (playedLetters s), BR.str ""] -- Horizontal layout for middle section
-            , BR.hBox [drawavailLetters (availLetters s), drawScore (getWordScore (playedLetters s) (scoring s))] -- Horizontal layout for bottom section
+            , BR.hBox [drawavailLetters (availLetters s), drawScore (score s)] -- Horizontal layout for bottom section
             ]
         borderedContent = borderLabel content
         -- Widget with yellow background and borders all around
@@ -154,9 +159,9 @@ handleEvent (BR.VtyEvent (V.EvKey V.KEnter _)) = do
   let word = playedLetters s
   if contains word (dictionary s)
     then do
-      let score = getWordScore word (scoring s)
-      liftIO $ putStrLn $ word ++ " is in trie | " ++ " score: " ++ show score
-      BR.put $ s {playedLetters = "", availLetters = addLetters word (availLetters s)}
+      let score2 = getWordScore word (scoring s)
+      liftIO $ putStrLn $ word ++ " is in trie | " ++ " score: " ++ show score2
+      BR.put $ s {playedLetters = "", availLetters = addLetters word (availLetters s), score = score2 + (score s)}
       return ()
     else do
       BR.put $ s {playedLetters = "", availLetters = (availLetters s) ++ (playedLetters s)}
