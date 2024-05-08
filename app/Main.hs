@@ -1,7 +1,7 @@
 module Main where
 
 -- Internal imports
-import Dictionary(Trie, buildDictionary, contains, shrinkTrie, countWords, getAllWords)
+import Dictionary(Trie, buildDictionary, contains, shrinkTrie, countWords, printTrie)
 import Score (getScoringData, getWordScore)
 
 
@@ -78,12 +78,20 @@ initialize = do
   putStrLn "Dictionary Shrunk"
 
   -- Print all words in shrunken dictionary
-  let allWords = getAllWords shrunken
-  mapM_ putStrLn allWords
+  -- let allWords = getAllWords shrunken
+  -- mapM_ putStrLn allWords
+
 
   putStrLn "----------------------------"
 
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
+
+testPossibleWords :: Trie -> String -> IO ()
+testPossibleWords t s = do
+  putStrLn $ " >> TESTING PRUNED DICT: "
+  putStrLn $ "      set : " ++ s
+  putStrLn $ "      size: " ++ (show $ countWords t)
+  printTrie t
 
 
 generateLetters :: Trie -> IO String 

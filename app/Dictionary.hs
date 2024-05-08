@@ -2,9 +2,10 @@ module Dictionary(
   Trie,
   buildDictionary,
   contains,
+  getListOfStrings,
   shrinkTrie,
   countWords,
-  getAllWords
+  printTrie
 ) where
 
 import qualified Data.Map.Strict as M --need a map because we don't know how many children each node is going to have
@@ -56,33 +57,6 @@ buildDictionary filePath = do
 -- AIsolver
 --getListOfStrings :: String -> [String]
 --getListOfStrings s = map unpack (splitOn (pack "\r\n") (pack s)) --convert string to text, split on \r\n, convert back to string
-shrinkTrie :: [Char] -> Trie -> Trie
-shrinkTrie letters trie = shrinkTrie' letters 0 trie
-  where
-    shrinkTrie' :: [Char] -> Int -> Trie -> Trie
-    shrinkTrie' _ _ (Node True _) = Node True M.empty 
-    -- Keep valid words
-    shrinkTrie' _ 7 _             = Node False M.empty 
-    -- Max depth reached, prune
-    shrinkTrie' [] _ _            = Node False M.empty 
-    -- Ran out of letters, prune
-    shrinkTrie' (x:xs) depth (Node end chMap) =
-      case M.lookup x chMap of
-        Just child ->
-          let nextDepth = if end then depth + 1 else depth 
-          -- Increase depth only if reaching end of word
-          in Node end (M.singleton x (shrinkTrie' xs nextDepth child)) 
-          -- Recurse down the trie
-        Nothing ->
-          Node False M.empty -- Letter not found, prune
-
-
-countWords :: Trie -> Int
-countWords trie = countWords' trie
-  where
-    countWords' :: Trie -> Int
-    countWords' (Node True childrenMap) = 1 + sum (map countWords' (M.elems childrenMap))
-    countWords' (Node False childrenMap) = sum (map countWords' (M.elems childrenMap))
 
 getListOfStrings :: T.Text -> [String]
 getListOfStrings s = map T.unpack (T.splitOn charsToText s)
@@ -92,9 +66,45 @@ getListOfStrings s = map T.unpack (T.splitOn charsToText s)
 readFileText :: FilePath -> IO T.Text
 readFileText filePath = TIO.readFile filePath
 
-getAllWords :: Trie -> [String]
-getAllWords trie = getAllWords' "" trie
+countWords :: Trie -> Int
+countWords trie =  ( countWords' trie) -1
   where
-    getAllWords' :: String -> Trie -> [String]
-    getAllWords' prefix (Node True childrenMap) = prefix : concatMap (\(c, t) -> getAllWords' (prefix ++ [c]) t) (M.toList childrenMap)
-    getAllWords' prefix (Node False childrenMap) = concatMap (\(c, t) -> getAllWords' (prefix ++ [c]) t) (M.toList childrenMap)
+    countWords' :: Trie -> Int
+    countWords' (Node True childrenMap) = 1 + sum (map countWords' (M.elems childrenMap))
+    countWords' (Node False childrenMap) = sum (map countWords' (M.elems childrenMap))
+
+printTrie :: Trie -> IO ()
+printTrie = printTrie' ""
+
+printTrie' :: String -> Trie -> IO ()
+printTrie' prefix (Node endOfWord children) = do
+  let prefix' = if endOfWord then prefix else ""
+  if endOfWord
+    then putStrLn prefix'
+    else return ()
+  mapM_ (\(char, child) -> printTrie' (prefix ++ [char]) child) (M.toList children)
+
+
+shrinkTrie :: [Char] -> Trie -> Trie
+shrinkTrie letters trie = limitDupes letters $ chopDepth (pruneBadBranch trie letters)
+
+pruneBadBranch :: Trie -> [Char] -> Trie
+pruneBadBranch trie chars = trie { children = prunedChildren }
+  where
+    prunedChildren = M.map (\child -> pruneBadBranch child chars) 
+        $ M.filterWithKey (\k _ -> k `elem` chars) (children trie)
+
+chopDepth :: Trie -> Trie
+chopDepth trie = chopOffAtDepth' trie 0
+  where
+    chopOffAtDepth' :: Trie -> Int -> Trie
+    chopOffAtDepth' t depth
+      | depth == 7 = t { children = M.empty }  -- Remove all children if depth is 7
+      | otherwise = t { children = prunedChildren }
+      where
+        prunedChildren = M.map (\child -> chopOffAtDepth' child (depth + 1)) (children t)
+
+limitDupes :: [Char] -> Trie -> Trie
+limitDupes _ t = id t
+-- TODO: implement this function
+
