@@ -59,6 +59,7 @@ initialize = do
   let exampleWords = ["hello", "world", "example"]
   mapM_ (\word -> testGetWordScore scores word) exampleWords
   let playedLetters = "" -- TODO: figure this out
+<<<<<<< HEAD
       availLetters = unsafeLocalState (getLetterSet 5 "ae")
         -- unsafeLocalState (getLetterSet 5 "ae") 
         -- unsafeLocalState (getLetterSet 7 []) 
@@ -74,6 +75,10 @@ testPossibleWords t s = do
   putStrLn $ "      set : " ++ s
   putStrLn $ "      size: " ++ (show $ countWords t)
   printTrie t
+=======
+      availLetters = unsafeLocalState (getLetterSet 5 "ae") -- TODO: generate random letters on start
+  return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
+>>>>>>> 7f0256acb9abc2ebfdf3ef6b51b76259210c8f5d
 
 testGetWordScore :: [(Char, Int)] -> String -> IO ()
 testGetWordScore scores word = do
@@ -82,7 +87,11 @@ testGetWordScore scores word = do
 
 -- generate list of random letters
 randomChar :: IO Char
+<<<<<<< HEAD
 randomChar = fmap chr (randomRIO (97, 122)) -- TODO: change to upper ascii ?
+=======
+randomChar = fmap chr (randomRIO (97, 122))
+>>>>>>> 7f0256acb9abc2ebfdf3ef6b51b76259210c8f5d
 
 getSet :: Int -> IO [Char]
 getSet n = sequence $ replicate n randomChar
@@ -90,7 +99,11 @@ getSet n = sequence $ replicate n randomChar
 getLetterSet :: Int -> [Char] -> IO [Char]
 getLetterSet n ls = fmap (++ ls) (getSet n)
 -- for 7 random letters use :  getLetterSet 7 []
+<<<<<<< HEAD
 -- for it always w [a,e] use:  getLetterSet 5 "ae"
+=======
+-- for set always w "ae" use:  getLetterSet 5 "ae"
+>>>>>>> 7f0256acb9abc2ebfdf3ef6b51b76259210c8f5d
 
 removeLetter :: Char -> [Char] -> [Char]
 removeLetter c avail = filter (/= c) avail
