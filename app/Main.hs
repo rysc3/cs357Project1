@@ -9,7 +9,7 @@ import Score (getScoringData, getWordScore)
 import Control.Monad (when)
 import Data.Time.Clock
 import Data.Time.Format
-import Data.Char (isAlpha)
+import Data.Char (isAlpha, toUpper)
 
 
 -- Brick things --
@@ -26,6 +26,10 @@ import GHC.Base (build)
 import Control.Monad.IO.Class (liftIO)
 import System.Exit (exitSuccess)
 -- import Brick.AttrMap as BR (AttrMap, attrMap, AttrName, attrName)
+import qualified Brick.Widgets.Border.Style as BS
+import qualified Brick.Widgets.Table as T
+import qualified Brick.Widgets.Border as B
+import Brick.Types (Widget)
 
 main = do
   initialState <- initialize
@@ -38,14 +42,6 @@ data State = State
     availLetters :: String
   }
 
-{-
-  - Dictionary seems to be working
-  - Scoring seems to be working 
-
-  - still need to figure out tracking played letters 
-  - Still need to generate random letters to start **
-  -- Need AI for that part
--}
 initialize :: IO State
 initialize = do
   dictionary <- buildDictionary "Dictionaries/01-Dictionary.txt"
@@ -77,11 +73,26 @@ addLetters :: String -> [Char] -> [Char]
 addLetters [] avail = avail
 addLetters (c : cs) avail = addLetters cs (removeLetter c avail)
 
-drawavailLetters :: [Char] -> BR.Widget ()
-drawavailLetters avail = BR.str $ "Your Letters: " ++ avail
+type TableCell = BR.Widget ()
 
-drawPlayedLetters :: [Char] -> BR.Widget ()
-drawPlayedLetters played = BR.str $ "Current Play: " ++ played
+-- Function to draw available letters in a table
+drawavailLetters :: [Char] -> Widget ()
+drawavailLetters avail =
+    let paddedChars = take 7 (avail ++ repeat ' ') -- Ensure we have at least 7 characters, padding with spaces if necessary
+        cells = map (\c -> B.border (BR.padLeftRight 1 $ BR.str [c])) paddedChars
+        table = BR.hBox cells
+    in
+        B.borderWithLabel (BR.str "Available Letters") table
+
+-- Function to draw played letters in a table
+drawPlayedLetters :: [Char] -> Widget ()
+drawPlayedLetters played =
+    let paddedChars = take 7 (played ++ repeat ' ') -- Ensure we have at least 7 characters, padding with spaces if necessary
+        cells = map (\c -> B.border (BR.padLeftRight 1 $ BR.str [c])) paddedChars
+        table = BR.hBox cells
+    in
+        B.borderWithLabel (BR.str "Played Letters") table
+
 
 drawScore :: Int -> BR.Widget ()
 drawScore score = BR.str $ "Total Score: " ++ show score
@@ -90,7 +101,7 @@ drawUI :: State -> BR.Widget ()
 drawUI s =
     let label = BR.withAttr (BR.attrName "label") . BR.str
         -- redBackgroundAttr = BR.withAttr (BR.attrName "redBackground") . BR.str -- I can't figure out how to set a background color
-        borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Word Game")
+        borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Word Game") . BR.padAll 1 
         content = BR.vBox
             [ BR.str "Welcome to Word Game!"
             , BR.str "" -- Spacer
@@ -123,9 +134,13 @@ handleEvent (BR.VtyEvent (V.EvKey V.KEnter _)) = do
       return ()
 handleEvent (BR.VtyEvent (V.EvKey (V.KChar c) _)) = do
   s <- BR.get
-  BR.put $ s {playedLetters = addLetter c (playedLetters s), availLetters = removeLetter c (availLetters s)}
-  return ()
-handleEvent (BR.VtyEvent (V.EvKey (V.KChar back) _)) = do
+  if elem (toUpper c) (availLetters s)
+    then do
+      BR.put $ s {playedLetters = addLetter (toUpper c) (playedLetters s), availLetters = removeLetter (toUpper c) (availLetters s)}
+      return ()
+    else do
+      return ()
+handleEvent (BR.VtyEvent (V.EvKey V.KBS _)) = do
   s <- BR.get
   let lastLetter = getLastLetter (playedLetters s)
   BR.put $ s {playedLetters = filter (/= lastLetter) (playedLetters s), availLetters = (availLetters s) ++ [lastLetter]}
