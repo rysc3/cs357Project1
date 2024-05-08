@@ -83,22 +83,6 @@ initialize = do
   -- putStrLn "---"
   -- putStrLn "Dictionary Shrunk"
 
-  {-
-    First we call generateStartingLetters to get a random list of 7 characters. 
-    
-    We pass the output here into generateLetters which 
-      - shrinks dictionary 
-      - counts the number of words in the dictionary 
-      - if re-generates starting letters if the number of words is less than 30
-    
-    Once it makes it out of this method we have a valid let of starting letters. However, we don't allow duplicates. 
-
-    So after the above two are completed, we then pass it into remove-duplicates to remove any words that have the same letter more than once. 
-    This method will first remove these duplicates, but will conclude by checking the number of words in the trie after they've all been removed.
-    If the number here is < 30, we will re-generate the starting letters again.
-
-    Both of these conditions must be met for the game to start
-  -}
   -- TODO @here I'm kinda just fibbin around about the number of words to estimate how many words have duplicate letters
   let score = (0, round $ fromIntegral (countWords shrunken) / 4)  -- save score to pass into initial state with num of possible words
 
@@ -166,9 +150,6 @@ testPossibleWords t s = do
   putStrLn $ "      size: " ++ (show $ countWords t)
   printTrie t
 
-{-
-      -- Generate starting letters --
--}
 
 removeLetter :: Char -> [Char] -> [Char]
 removeLetter c avail = filter (/= c) avail
@@ -184,10 +165,6 @@ addLetters :: String -> [Char] -> [Char]
 addLetters [] avail = avail
 addLetters (c : cs) avail = addLetters cs (removeLetter c avail)
 
-
-{-
-      -- Draw Methods --
--}
 
 defaultColor :: V.Color
 defaultColor = V.black
@@ -259,17 +236,18 @@ drawWordsCount s = BR.str $ "Words: " ++ show ((length $ playedWords s) - 1) ++ 
 endOfGameGUI :: State -> Widget ()
 endOfGameGUI s =
     let wordList = map fst (playedWords s)
-        percent = (fromIntegral (length wordList) / fromIntegral (snd (score s)) * 100) * 4   -- We are rounding the number in initialize, must even that out here
+        percent = (fromIntegral (length wordList) / fromIntegral (snd (score s)) * 100) * 4
         totalScore = fst (score s)
         wordText = "Words used: " ++ unwords wordList
         percentText = "Percentage of words found: " ++ show (round percent) ++ "%"
-        scoreText = "Total score: " ++ show totalScore
+        scoreText = "Total Score: " ++ show totalScore ++ "\nWords: " ++ show ((length $ playedWords s) - 1) ++ " / " ++ show (snd $ score s)
         content = BR.vBox [BR.str wordText, BR.str percentText, BR.str scoreText]
+        -- Center the content vertically and horizontally
+        centeredContent = C.center content
+        -- Add a border around the centered content
+        borderedContent = BR.withBorderStyle BS.unicodeBold $ B.borderWithLabel (BR.str "Game Over") centeredContent
     in
-        BR.withBorderStyle BS.unicodeBold $ B.borderWithLabel (BR.str "Game Over") content
-{-
-      -- Draw Methods --
--}
+        borderedContent
 
 
 handleEvent :: BR.BrickEvent () () -> BR.EventM () State ()
@@ -303,7 +281,7 @@ handleEvent (BR.VtyEvent (V.EvKey V.KEsc _)) = do
     s <- BR.get
     let scoreWidget = drawScore (fst (score s)) s
     let endGameWidget = endOfGameGUI s
-    let finalWidget = BR.vBox [scoreWidget, endGameWidget]
+    let finalWidget = BR.vBox [endGameWidget]
     liftIO $ BR.simpleMain finalWidget
     liftIO exitSuccess
 handleEvent _ = do
