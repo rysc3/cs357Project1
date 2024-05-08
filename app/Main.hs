@@ -83,31 +83,45 @@ initialize = do
   putStrLn "---"
   putStrLn "Dictionary Shrunk"
 
+  {-
+    First we call generateStartingLetters to get a random list of 7 characters. 
+    
+    We pass the output here into generateLetters which 
+      - shrinks dictionary 
+      - counts the number of words in the dictionary 
+      - if re-generates starting letters if the number of words is less than 30
+    
+    Once it makes it out of this method we have a valid let of starting letters. However, we don't allow duplicates. 
+
+    So after the above two are completed, we then pass it into remove-duplicates to remove any words that have the same letter more than once. 
+    This method will first remove these duplicates, but will conclude by checking the number of words in the trie after they've all been removed.
+    If the number here is < 30, we will re-generate the starting letters again.
+
+    Both of these conditions must be met for the game to start
+  -}
+  -- TODO @here I'm kinda just fibbin around about the number of words to estimate how many words have duplicate letters
+  let score = (-1, round $ fromIntegral (countWords shrunken) / 4)  -- save score to pass into initial state with num of possible words
+
   -- Print all words in shrunken dictionary
   -- let allWords = getAllWords shrunken
   -- mapM_ putStrLn allWords
-
 
   putStrLn "----------------------------"
 
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters, score = score, playedWords = playedWords}
 
-testPossibleWords :: Trie -> String -> IO ()
-testPossibleWords t s = do
-  putStrLn $ " >> TESTING PRUNED DICT: "
-  putStrLn $ "      set : " ++ s
-  putStrLn $ "      size: " ++ (show $ countWords t)
-  printTrie t
-
-
+{-
+      -- Generate starting letters --
+-}
 generateLetters :: Trie -> IO String 
 generateLetters dict = do 
   putStrLn "----------------"
   randomLetters <- generateStartingLetters
-  testPossibleWords (shrinkTrie randomLetters dict) randomLetters
   isValid <- isValid randomLetters
   if isValid
-    then return randomLetters 
+    then do 
+      testPossibleWords (shrinkTrie randomLetters dict) randomLetters
+      return randomLetters 
     else do
       putStrLn "letters: "
       putStrLn randomLetters
@@ -123,7 +137,6 @@ generateLetters dict = do
       let shrunkenTrie = shrinkTrie letters dict
           wordCount = countWords shrunkenTrie
       return (wordCount > 30)
-
 
 generateStartingLetters :: IO String
 generateStartingLetters = do
@@ -146,6 +159,16 @@ generateStartingLetters = do
     generateRandomChar :: IO Char
     generateRandomChar = randomRIO ('B', 'Z')
 
+testPossibleWords :: Trie -> String -> IO ()
+testPossibleWords t s = do
+  putStrLn $ " >> TESTING PRUNED DICT: "
+  putStrLn $ "      set : " ++ s
+  putStrLn $ "      size: " ++ (show $ countWords t)
+  printTrie t
+
+{-
+      -- Generate starting letters --
+-}
 
 removeLetter :: Char -> [Char] -> [Char]
 removeLetter c avail = filter (/= c) avail
@@ -231,7 +254,9 @@ handleEvent (BR.VtyEvent (V.EvKey V.KEnter _)) = do
     then do
       let word_score = (getWordScore word (scoring s)) + (fst $ score s) -- increment user score
       liftIO $ putStrLn $ word ++ " is in trie | " ++ " new score: " ++ show word_score
-      BR.put $ s {playedLetters = "", availLetters = (availLetters s) ++ (playedLetters s), score = (word_score, snd $ score s)}
+      -- Add the valid word to the playedWords list
+      let newPlayedWords = word : playedWords s
+      BR.put $ s {playedLetters = "", availLetters = (availLetters s) ++ (playedLetters s), score = (word_score, snd $ score s), playedWords = newPlayedWords}
       return ()
     else do
       BR.put $ s {playedLetters = "", availLetters = (availLetters s) ++ (playedLetters s)}
@@ -251,6 +276,7 @@ handleEvent (BR.VtyEvent (V.EvKey V.KBS _)) = do
 handleEvent (BR.VtyEvent (V.EvKey V.KEsc _)) = do
   liftIO $ putStrLn "Quitting Game"
   liftIO exitSuccess
+
 
 app :: BR.App State () ()
 app =
