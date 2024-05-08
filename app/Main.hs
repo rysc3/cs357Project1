@@ -86,17 +86,23 @@ initialize = do
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
 
 
-generateLetters :: Trie -> IO String
+generateLetters :: Trie -> IO String 
 generateLetters dict = do 
-  -- Generate the first set of letters 
+  putStrLn "----------------"
   randomLetters <- generateStartingLetters
-
   isValid <- isValid randomLetters
   if isValid
     then return randomLetters 
-    else generateLetters dict
+    else do
+      putStrLn "letters: "
+      putStrLn randomLetters
+      putStrLn "word:"
+      let shrunkenTrie = shrinkTrie randomLetters dict
+          wordCount = countWords shrunkenTrie
+      print wordCount
+      putStrLn "----------------"
+      generateLetters dict
   where 
-    -- check for 30
     isValid :: String -> IO Bool 
     isValid letters = do
       let shrunkenTrie = shrinkTrie letters dict
