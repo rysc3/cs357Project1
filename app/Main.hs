@@ -84,7 +84,7 @@ initialize = do
   -- putStrLn "Dictionary Shrunk"
 
   -- TODO @here I'm kinda just fibbin around about the number of words to estimate how many words have duplicate letters
-  let score = (0, round $ fromIntegral (countWords shrunken) / 4)  -- save score to pass into initial state with num of possible words
+  let score = (0, round $ fromIntegral (countWords shrunken))  -- save score to pass into initial state with num of possible words
 
   -- Print all words in shrunken dictionary
   -- let allWords = getAllWords shrunken
@@ -240,7 +240,7 @@ drawWordsCount s = BR.str $ "Words: " ++ show ((length $ playedWords s) - 1) ++ 
 endOfGameGUI :: State -> Widget ()
 endOfGameGUI s =
     let wordList = map fst (playedWords s)
-        percent = (fromIntegral (length wordList) / fromIntegral (snd (score s)) * 100) * 4
+        percent = (fromIntegral (length wordList) / fromIntegral (snd (score s)) * 100)
         totalScore = fst (score s)
         wordText = "Words used: " ++ foldr (\word acc -> word ++ ", " ++ acc) "" (init wordList) ++ last wordList -- Display all words except the last one (which is empty
         percentText = "Percentage of words found: " ++ show (round percent) ++ "%"
