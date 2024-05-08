@@ -47,7 +47,7 @@ main = do
 data State = State
   { dictionary :: Trie,
     scoring :: [(Char, Int)],
-    playedWords :: [String],
+    playedWords :: [(String, Int)],
     playedLetters :: String,
     availLetters :: String,
     score :: (Int, Int)
@@ -60,7 +60,7 @@ initialize = do
   dictionary <- buildDictionary "Dictionaries/01-Dictionary.txt"
   scores <- getScoringData "Dictionaries/01-Scoring.txt"
   let score = (0,0)   -- initial score
-  let playedWords = [""]
+  let playedWords = [("", 0)]
 
   -- Initialize State
   playedLetters <- return ""
@@ -224,25 +224,41 @@ drawUI :: State -> BR.Widget ()
 drawUI s =
     let label = BR.withAttr (BR.attrName "label") . BR.str
         -- redBackgroundAttr = BR.withAttr (BR.attrName "redBackground") . BR.str -- I can't figure out how to set a background color
-        borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Word Game") . BR.padAll 1 
+        borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Anagrams") . BR.padAll 1 
         content = BR.vBox
-            [ BR.str "Welcome to Word Game!"
+            [ BR.str "Welcome to Anagrams!"
             , BR.str "" -- Spacer
             , BR.hBox [drawPlayedLetters (playedLetters s), BR.str "", drawScore (fst (score s)) s] -- Horizontal layout for middle section
             , BR.hBox [drawavailLetters (availLetters s)] -- Horizontal layout for bottom section
             ]
         borderedContent = borderLabel content
-        -- Widget with yellow background and borders all around
-        finalWidget = BR.withAttr (BR.attrName "redBackground") borderedContent
+        playedWordsWidget = drawPlayedWords (playedWords s)  -- New widget to display played words
+        finalWidget = BR.vBox [BR.hBox [borderedContent, playedWordsWidget]]
     in
         C.center finalWidget
+
+drawPlayedWords :: [(String, Int)] -> BR.Widget ()
+drawPlayedWords playedWords =
+    let label = BR.withAttr (BR.attrName "label") . BR.str
+        borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Played Words") . BR.padAll 1 
+        content = BR.vBox $ map drawWordWithScore $ filter (\(_, score) -> score /= 0) playedWords
+    in
+        borderLabel content
+
+-- Function to draw a word with its score
+drawWordWithScore :: (String, Int) -> BR.Widget ()
+drawWordWithScore (word, score) =
+    let wordWidget = BR.str word
+        scoreWidget = BR.str ("  ~~   " ++ show score)
+    in
+        wordWidget BR.<+> scoreWidget 
 
 drawWordsCount :: State -> BR.Widget ()
 drawWordsCount s = BR.str $ "Words: " ++ show ((length $ playedWords s) - 1) ++ " / " ++ show (snd $ score s)
 
 endOfGameGUI :: State -> Widget ()
 endOfGameGUI s =
-    let wordList = playedWords s
+    let wordList = map fst (playedWords s)
         percent = (fromIntegral (length wordList) / fromIntegral (snd (score s)) * 100) * 4   -- We are rounding the number in initialize, must even that out here
         totalScore = fst (score s)
         wordText = "Words used: " ++ unwords wordList
@@ -260,12 +276,12 @@ handleEvent :: BR.BrickEvent () () -> BR.EventM () State ()
 handleEvent (BR.VtyEvent (V.EvKey V.KEnter _)) = do
   s <- BR.get
   let word = playedLetters s
-  if contains word (dictionary s)
+  if (contains word (dictionary s) && (not (elem word (map fst $ playedWords s))))
     then do
       let word_score = (getWordScore word (scoring s)) + (fst $ score s) -- increment user score
       -- liftIO $ putStrLn $ word ++ " is in trie | " ++ " new score: " ++ show word_score
       -- Add the valid word to the playedWords list
-      let newPlayedWords = word : playedWords s
+      let newPlayedWords = (word, (getWordScore word (scoring s))) : playedWords s
       BR.put $ s {playedLetters = "", availLetters = (availLetters s) ++ (playedLetters s), score = (word_score, snd $ score s), playedWords = newPlayedWords}
       return ()
     else do
