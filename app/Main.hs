@@ -10,7 +10,7 @@ import Control.Monad (when)
 import Data.Time.Clock
 import Data.Time.Format
 import Data.Char (isAlpha)
-
+import System.Random (randomRIO)
 
 -- Brick things --
 import qualified Graphics.Vty as V
@@ -27,7 +27,14 @@ import Control.Monad.IO.Class (liftIO)
 import System.Exit (exitSuccess)
 -- import Brick.AttrMap as BR (AttrMap, attrMap, AttrName, attrName)
 
+
 main = do
+  -- print your starting letters to terminal
+  putStrLn "----- Starting Letters -----"
+  startingLetters <- generateStartingLetters
+  putStrLn startingLetters
+  putStrLn "----------------------------"
+
   initialState <- initialize
   BR.defaultMain app initialState
 
@@ -51,16 +58,19 @@ initialize = do
   dictionary <- buildDictionary "Dictionaries/01-Dictionary.txt"
   scores <- getScoringData "Dictionaries/01-Scoring.txt"
   -- Test some example words
-  let exampleWords = ["hello", "world", "example"]
-  mapM_ (\word -> testGetWordScore scores word) exampleWords
-  let playedLetters = "" -- TODO: figure this out
-      availLetters = "AJZIKLQ" -- TODO: generate random letters on start
+  playedLetters <- return ""
+  availLetters <- generateStartingLetters
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
 
-testGetWordScore :: [(Char, Int)] -> String -> IO ()
-testGetWordScore scores word = do
-  putStrLn $ " -- " ++ word ++ " --"
-  putStrLn $ show $ getWordScore word scores
+-- Generate 7 starting Letters, always a,e + 5 randomly generated letters
+generateStartingLetters :: IO String
+generateStartingLetters = do
+  randomChars <- sequence $ replicate 5 generateRandomChar
+  -- Always start with a, e
+  return $ 'a' : 'e' : randomChars
+  where
+    generateRandomChar :: IO Char
+    generateRandomChar = randomRIO ('a', 'z')
 
 
 removeLetter :: Char -> [Char] -> [Char]
