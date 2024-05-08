@@ -85,50 +85,6 @@ printTrie' prefix (Node endOfWord children) = do
   mapM_ (\(char, child) -> printTrie' (prefix ++ [char]) child) (M.toList children)
 
 
-
-
-{-
-shrinkTrie :: [Char] -> Trie -> Trie
-shrinkTrie letters trie = shrinkTrie' letters 0 trie
-  where
-    shrinkTrie' :: [Char] -> Int -> Trie -> Trie
-    shrinkTrie' _ _ (Node True _) = Node True M.empty 
-    -- Keep valid words
-    shrinkTrie' _ 7 _             = Node False M.empty 
-    -- Max depth reached, prune
-    shrinkTrie' [] _ _            = Node False M.empty 
-    -- Ran out of letters, prune
-    shrinkTrie' (x:xs) depth (Node end chMap) =
-      case M.lookup x chMap of
-        Just child ->
-          let nextDepth = if end then depth + 1 else depth 
-          -- Increase depth only if reaching end of word
-          in Node end (M.singleton x (shrinkTrie' xs nextDepth child)) 
-          -- Recurse down the trie
-        Nothing ->
-          Node False M.empty -- Letter not found, prune
-
-
-shrinkTrie :: [Char] -> Trie -> Trie
-shrinkTrie letters trie = shrinkTrie' letters 0 trie
-  where
-    shrinkTrie' :: [Char] -> Int -> Trie -> Trie
-    shrinkTrie' _ _ (Node True _) = emptyTrie  -- End of word
-    shrinkTrie' _ depth _ | depth > 7 = emptyTrie  -- Exceeded maximum depth
-    shrinkTrie' [] _ _ = emptyTrie  -- No letters left
-    shrinkTrie' (l:ls) depth (Node _ childrenMap) =
-        case M.lookup l childrenMap of
-            Nothing -> emptyTrie  -- Letter not found, prune branch
-            Just childNode -> Node False prunedChildren
-              where
-                prunedChild = shrinkTrie' ls (depth + 1) childNode
-                prunedChildren = if isEmptyTrie prunedChild then M.delete l childrenMap else M.insert l prunedChild childrenMap
-
-    isEmptyTrie :: Trie -> Bool
-    isEmptyTrie (Node end childrenMap) = not end && M.null childrenMap
--}
-
-
 shrinkTrie :: [Char] -> Trie -> Trie
 shrinkTrie letters trie = limitDupes letters $ chopDepth (pruneBadBranch trie letters)
 
@@ -151,3 +107,4 @@ chopDepth trie = chopOffAtDepth' trie 0
 limitDupes :: [Char] -> Trie -> Trie
 limitDupes _ t = id t
 -- TODO: implement this function
+

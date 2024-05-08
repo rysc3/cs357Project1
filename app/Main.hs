@@ -81,6 +81,7 @@ initialize = do
   -- let allWords = getAllWords shrunken
   -- mapM_ putStrLn allWords
 
+
   putStrLn "----------------------------"
 
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
