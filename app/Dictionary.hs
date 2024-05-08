@@ -2,7 +2,8 @@ module Dictionary(
   Trie,
   buildDictionary,
   contains,
-  getListOfStrings
+  shrinkTrie,
+  countWords
 ) where
 
 import qualified Data.Map.Strict as M --need a map because we don't know how many children each node is going to have

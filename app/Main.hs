@@ -1,7 +1,7 @@
 module Main where
 
 -- Internal imports
-import Dictionary(Trie, buildDictionary, contains)
+import Dictionary(Trie, buildDictionary, contains, shrinkTrie, countWords)
 import Score (getScoringData, getWordScore)
 
 
@@ -55,12 +55,33 @@ data State = State
 -}
 initialize :: IO State
 initialize = do
+  -- Read in files
+  dictionaryContents <- readFile "Dictionaries/01-Dictionary.txt"
   dictionary <- buildDictionary "Dictionaries/01-Dictionary.txt"
   scores <- getScoringData "Dictionaries/01-Scoring.txt"
-  -- Test some example words
+
+  -- Initialize State
   playedLetters <- return ""
   availLetters <- generateStartingLetters
+
+  -- use AI to shrink trie
+  putStrLn "--- Shrinking Dictionary ---"
+  let actualSize = length $ lines dictionaryContents
+  putStrLn $ "Actual Size: " ++ show actualSize
+  putStrLn "---"
+
+  let startDictionary = countWords dictionary
+  putStrLn $ "Start: " ++ show startDictionary
+  putStrLn "---"
+
+  let shrunken = shrinkTrie availLetters dictionary
+
+  let endDictionary = countWords shrunken
+  putStrLn $ "End: " ++ show endDictionary
+  putStrLn "----------------------------"
+
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
+
 
 -- Generate 7 starting Letters, always a,e + 5 randomly generated letters
 generateStartingLetters :: IO String

@@ -8,7 +8,7 @@ module Tests(
     and I want to make a git pipeline work but git doesn't love haskell.
   -}
 import Score (getScoringData, getLetterScore)
-import Dictionary (getListOfStrings)
+-- import Dictionary (getListOfStrings)
 
 -- Function to run all tests
 runAllTests :: FilePath -> FilePath -> IO ()
