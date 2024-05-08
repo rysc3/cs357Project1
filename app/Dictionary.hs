@@ -13,6 +13,7 @@ import Data.Text (pack, unpack, splitOn)
 import Data.Char (toUpper)
 import qualified Data.Text.IO as TIO
 import qualified Data.Text as T
+import Data.List (nub)
 
 -- maisy was here
 
@@ -38,12 +39,22 @@ emptyTrie :: Trie
 emptyTrie = Node False M.empty
 
 insert :: String -> Trie -> Trie
-insert []     trie = trie { endOfWord = True }
-insert (x:xs) trie =
-    let childNode = M.lookup (toUpper x) (children trie)
-        newNode = insert (map toUpper xs) (maybe emptyTrie id childNode)
-        updatedChildren = M.insert (toUpper x) newNode (children trie)
-    in trie { children = updatedChildren }
+insert [] trie = trie { endOfWord = True }
+insert word trie
+    | hasDuplicates word = trie  -- Skip words with duplicates
+    | otherwise = insert' (map toUpper word) trie
+  where
+    insert' :: String -> Trie -> Trie
+    insert' [] node = node { endOfWord = True }
+    insert' (x:xs) node =
+        let childNode = M.findWithDefault emptyTrie (toUpper x) (children node)
+            newNode = insert' (map toUpper xs) childNode
+            updatedChildren = M.insert (toUpper x) newNode (children node)
+        in node { children = updatedChildren }
+
+    -- Function to check if a word has duplicate letters
+    hasDuplicates :: String -> Bool
+    hasDuplicates word = length word /= length (nub word)
 
 contains :: String -> Trie -> Bool
 contains [] trie = endOfWord trie
@@ -106,7 +117,6 @@ chopDepth trie = chopOffAtDepth' trie 0
         prunedChildren = M.map (\child -> chopOffAtDepth' child (depth + 1)) (children t)
 
 limitDupes :: [Char] -> Trie -> Trie
-limitDupes letters trie = trie { children = limitedChildren }
-  where
-    limitedChildren = M.map (\child -> limitDupes letters child) (M.filterWithKey (\k _ -> k `elem` letters) (children trie))
+limitDupes _ t = id t
+
 
