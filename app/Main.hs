@@ -127,20 +127,20 @@ drawScore score = BR.str $ "Total Score: " ++ show score
 
 drawUI :: State -> BR.Widget ()
 drawUI s =
-    let label = BR.withAttr (BR.attrName "label") . BR.str
-        -- redBackgroundAttr = BR.withAttr (BR.attrName "redBackground") . BR.str -- I can't figure out how to set a background color
-        borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Word Game")
-        content = BR.vBox
-            [ BR.str "Welcome to Word Game!"
-            , BR.str "" -- Spacer
-            , BR.hBox [drawPlayedLetters (playedLetters s), BR.str ""] -- Horizontal layout for middle section
-            , BR.hBox [drawavailLetters (availLetters s), drawScore (getWordScore (playedLetters s) (scoring s))] -- Horizontal layout for bottom section
-            ]
-        borderedContent = borderLabel content
-        -- Widget with yellow background and borders all around
-        finalWidget = BR.withAttr (BR.attrName "redBackground") borderedContent
-    in
-        C.center finalWidget
+  let label = BR.withAttr (BR.attrName "label") . BR.str
+    -- redBackgroundAttr = BR.withAttr (BR.attrName "redBackground") . BR.str -- I can't figure out how to set a background color
+    borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Word Game")
+    content = BR.vBox
+      [ BR.str "Welcome to Word Game!"
+      , BR.str "" -- Spacer
+      , BR.hBox [drawPlayedLetters (playedLetters s), BR.str ""] -- Horizontal layout for middle section
+      , BR.hBox [drawavailLetters (availLetters s), drawScore (getWordScore (playedLetters s) (scoring s))] -- Horizontal layout for bottom section
+      ]
+    borderedContent = borderLabel content
+    -- Widget with yellow background and borders all around
+    finalWidget = BR.withAttr (BR.attrName "redBackground") borderedContent
+  in
+    C.center finalWidget
 
 
 {-
