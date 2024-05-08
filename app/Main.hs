@@ -11,6 +11,7 @@ import Data.Time.Clock
 import Data.Time.Format
 import Data.Char (isAlpha, toUpper)
 import System.Random (randomRIO)
+import Data.List (nub)
 
 -- Brick things --
 import qualified Graphics.Vty as V
@@ -85,15 +86,26 @@ initialize = do
   return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
 
 
--- Generate 7 starting Letters, always a,e + 5 randomly generated letters
 generateStartingLetters :: IO String
 generateStartingLetters = do
-  randomChars <- sequence $ replicate 5 generateRandomChar
-  -- Always start with a, e
-  return $ 'A' : 'E' : randomChars
+  -- Always start with A and E so there will be enough words that can be generated
+  let startingLetters = ['A', 'E']
+  -- get list of 7 characters
+  finalChars <- getMoreChars startingLetters
+  return finalChars
   where
+    getMoreChars :: String -> IO String
+    getMoreChars chars
+      | length chars == 7 = return chars
+      | otherwise = do
+          -- Generate a random character
+          randomChar <- generateRandomChar
+          if randomChar `notElem` chars
+            then getMoreChars (randomChar : chars)
+            else getMoreChars chars
+
     generateRandomChar :: IO Char
-    generateRandomChar = randomRIO ('A', 'E')
+    generateRandomChar = randomRIO ('B', 'Z')
 
 
 removeLetter :: Char -> [Char] -> [Char]
