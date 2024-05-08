@@ -175,7 +175,7 @@ defaultColor = V.black
 drawavailLetters :: [Char] -> Widget ()
 drawavailLetters avail =
     let paddedChars = take 7 (avail ++ repeat ' ') -- Ensure we have at least 7 characters, padding with spaces if necessary
-        cells = map (\c -> B.border (BR.padLeftRight 1 $ BR.str [c])) paddedChars
+        cells = map (\c ->  BR.padLeftRight 1 $ B.border (BR.padLeftRight 1 $ BR.str [c])) paddedChars
         table = BR.hBox cells
     in
         B.borderWithLabel (BR.str "Available Letters") table
@@ -184,14 +184,14 @@ drawavailLetters avail =
 drawPlayedLetters :: [Char] -> Widget ()
 drawPlayedLetters played =
     let paddedChars = take 7 (played ++ repeat ' ') -- Ensure we have at least 7 characters, padding with spaces if necessary
-        cells = map (\c -> B.border (BR.padLeftRight 1 $ BR.str [c])) paddedChars
+        cells = map (\c -> BR.padLeftRight 1 $ B.border (BR.padLeftRight 1 $ BR.str [c])) paddedChars
         table = BR.hBox cells
     in
         B.borderWithLabel (BR.str "Played Letters") table
 
 
 drawScore :: Int -> State -> BR.Widget ()
-drawScore userScore s = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (BR.str "Score") . BR.vBox $
+drawScore userScore s = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (BR.str "Score"). BR.padAll 2 . BR.vBox  $
     [ BR.str $ "Total Score: " ++ show userScore
     , drawWordsCount s
     ]
@@ -200,19 +200,23 @@ drawScore userScore s = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (B
 drawUI :: State -> BR.Widget ()
 drawUI s =
     let label = BR.withAttr (BR.attrName "label") . BR.str
-        -- redBackgroundAttr = BR.withAttr (BR.attrName "redBackground") . BR.str -- I can't figure out how to set a background color
-        borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Anagrams") . BR.padAll 1 
+        -- Adjust border style and padding for a bigger appearance
+        borderLabel = BR.withBorderStyle BS.unicodeBold . B.borderWithLabel (label "Anagrams") . BR.padAll 2
+        -- Increase font size and add extra lines for spacing
         content = BR.vBox
             [ BR.str "Welcome to Anagrams!"
+            , BR.str "                                                                         " -- Spacer
+            , BR.hBox [drawPlayedLetters (playedLetters s), BR.str "    ", drawScore (fst (score s)) s] -- Horizontal layout for middle section
             , BR.str "" -- Spacer
-            , BR.hBox [drawPlayedLetters (playedLetters s), BR.str "", drawScore (fst (score s)) s] -- Horizontal layout for middle section
             , BR.hBox [drawavailLetters (availLetters s)] -- Horizontal layout for bottom section
             ]
-        borderedContent = borderLabel content
-        playedWordsWidget = drawPlayedWords (playedWords s)  -- New widget to display played words
+        borderedContent = BR.padAll 1 $ borderLabel content
+        -- Add more space between the border and played words widget
+        playedWordsWidget = BR.padAll 1 $ drawPlayedWords (playedWords s)  -- New widget to display played words with extra padding
         finalWidget = BR.vBox [BR.hBox [borderedContent, playedWordsWidget]]
     in
         C.center finalWidget
+
 
 drawPlayedWords :: [(String, Int)] -> BR.Widget ()
 drawPlayedWords playedWords =
