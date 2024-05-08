@@ -2,7 +2,10 @@ module Dictionary(
   Trie,
   buildDictionary,
   contains,
-  getListOfStrings
+  getListOfStrings,
+  shrinkTrie,
+  countWords,
+  printTrie
 ) where
 
 import qualified Data.Map.Strict as M --need a map because we don't know how many children each node is going to have
@@ -55,9 +58,36 @@ buildDictionary filePath = do
 --getListOfStrings :: String -> [String]
 --getListOfStrings s = map unpack (splitOn (pack "\r\n") (pack s)) --convert string to text, split on \r\n, convert back to string
 
+getListOfStrings :: T.Text -> [String]
+getListOfStrings s = map T.unpack (T.splitOn charsToText s)
+  where 
+    charsToText = T.pack "\r\n"   -- these need to be Text
+
+readFileText :: FilePath -> IO T.Text
+readFileText filePath = TIO.readFile filePath
+
+countWords :: Trie -> Int
+countWords trie =  ( countWords' trie) -1
+  where
+    countWords' :: Trie -> Int
+    countWords' (Node True childrenMap) = 1 + sum (map countWords' (M.elems childrenMap))
+    countWords' (Node False childrenMap) = sum (map countWords' (M.elems childrenMap))
+
+printTrie :: Trie -> IO ()
+printTrie = printTrie' ""
+
+printTrie' :: String -> Trie -> IO ()
+printTrie' prefix (Node endOfWord children) = do
+  let prefix' = if endOfWord then prefix else ""
+  if endOfWord
+    then putStrLn prefix'
+    else return ()
+  mapM_ (\(char, child) -> printTrie' (prefix ++ [char]) child) (M.toList children)
 
 
 
+
+{-
 shrinkTrie :: [Char] -> Trie -> Trie
 shrinkTrie letters trie = shrinkTrie' letters 0 trie
   where
@@ -79,18 +109,45 @@ shrinkTrie letters trie = shrinkTrie' letters 0 trie
           Node False M.empty -- Letter not found, prune
 
 
-countWords :: Trie -> Int
-countWords trie = countWords' trie
+shrinkTrie :: [Char] -> Trie -> Trie
+shrinkTrie letters trie = shrinkTrie' letters 0 trie
   where
-    countWords' :: Trie -> Int
-    countWords' (Node True childrenMap) = 1 + sum (map countWords' (M.elems childrenMap))
-    countWords' (Node False childrenMap) = sum (map countWords' (M.elems childrenMap))
+    shrinkTrie' :: [Char] -> Int -> Trie -> Trie
+    shrinkTrie' _ _ (Node True _) = emptyTrie  -- End of word
+    shrinkTrie' _ depth _ | depth > 7 = emptyTrie  -- Exceeded maximum depth
+    shrinkTrie' [] _ _ = emptyTrie  -- No letters left
+    shrinkTrie' (l:ls) depth (Node _ childrenMap) =
+        case M.lookup l childrenMap of
+            Nothing -> emptyTrie  -- Letter not found, prune branch
+            Just childNode -> Node False prunedChildren
+              where
+                prunedChild = shrinkTrie' ls (depth + 1) childNode
+                prunedChildren = if isEmptyTrie prunedChild then M.delete l childrenMap else M.insert l prunedChild childrenMap
 
-getListOfStrings :: T.Text -> [String]
-getListOfStrings s = map T.unpack (T.splitOn charsToText s)
-  where 
-    charsToText = T.pack "\r\n"   -- these need to be Text
+    isEmptyTrie :: Trie -> Bool
+    isEmptyTrie (Node end childrenMap) = not end && M.null childrenMap
+-}
 
-readFileText :: FilePath -> IO T.Text
-readFileText filePath = TIO.readFile filePath
 
+shrinkTrie :: [Char] -> Trie -> Trie
+shrinkTrie letters trie = limitDupes letters $ chopDepth (pruneBadBranch trie letters)
+
+pruneBadBranch :: Trie -> [Char] -> Trie
+pruneBadBranch trie chars = trie { children = prunedChildren }
+  where
+    prunedChildren = M.map (\child -> pruneBadBranch child chars) 
+        $ M.filterWithKey (\k _ -> k `elem` chars) (children trie)
+
+chopDepth :: Trie -> Trie
+chopDepth trie = chopOffAtDepth' trie 0
+  where
+    chopOffAtDepth' :: Trie -> Int -> Trie
+    chopOffAtDepth' t depth
+      | depth == 7 = t { children = M.empty }  -- Remove all children if depth is 7
+      | otherwise = t { children = prunedChildren }
+      where
+        prunedChildren = M.map (\child -> chopOffAtDepth' child (depth + 1)) (children t)
+
+limitDupes :: [Char] -> Trie -> Trie
+limitDupes _ t = id t
+-- TODO: implement this function

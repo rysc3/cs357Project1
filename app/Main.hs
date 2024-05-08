@@ -1,7 +1,7 @@
 module Main where
 
 -- Internal imports
-import Dictionary(Trie, buildDictionary, contains)
+import Dictionary(Trie, buildDictionary, contains, shrinkTrie, countWords, printTrie)
 import Score (getScoringData, getWordScore)
 
 
@@ -39,7 +39,8 @@ data State = State
   { dictionary :: Trie,
     scoring :: [(Char, Int)],
     playedLetters :: String,
-    availLetters :: String
+    availLetters :: String,
+    possibleWords :: Trie
   }
 
 {-
@@ -58,8 +59,21 @@ initialize = do
   let exampleWords = ["hello", "world", "example"]
   mapM_ (\word -> testGetWordScore scores word) exampleWords
   let playedLetters = "" -- TODO: figure this out
-      availLetters = unsafeLocalState (getLetterSet 5 "ae") -- TODO: generate random letters on start
-  return State {dictionary = dictionary, scoring = scores, playedLetters = playedLetters, availLetters = availLetters}
+      availLetters = unsafeLocalState (getLetterSet 5 "ae")
+        -- unsafeLocalState (getLetterSet 5 "ae") 
+        -- unsafeLocalState (getLetterSet 7 []) 
+  let possibleWords = shrinkTrie availLetters dictionary
+  testPossibleWords possibleWords availLetters
+  return State {dictionary = dictionary, scoring = scores,
+                  playedLetters = playedLetters, availLetters = availLetters,
+                  possibleWords=possibleWords}
+
+testPossibleWords :: Trie -> String -> IO ()
+testPossibleWords t s = do
+  putStrLn $ " >> TESTING PRUNED DICT: "
+  putStrLn $ "      set : " ++ s
+  putStrLn $ "      size: " ++ (show $ countWords t)
+  printTrie t
 
 testGetWordScore :: [(Char, Int)] -> String -> IO ()
 testGetWordScore scores word = do
@@ -68,7 +82,7 @@ testGetWordScore scores word = do
 
 -- generate list of random letters
 randomChar :: IO Char
-randomChar = fmap chr (randomRIO (97, 122))
+randomChar = fmap chr (randomRIO (97, 122)) -- TODO: change to upper ascii ?
 
 getSet :: Int -> IO [Char]
 getSet n = sequence $ replicate n randomChar
